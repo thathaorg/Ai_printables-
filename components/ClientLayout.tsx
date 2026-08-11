@@ -2,13 +2,14 @@
 
 import React from "react"
 import BottomNav from "@/components/ui/BottomNav"
-import NewsletterPrompt from "@/components/NewsletterPrompt"
 
+// PRD: email is only ever asked at the download gate on /create — no global
+// newsletter popups (they would also appear on bridge pages, which must
+// never collect email).
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <NewsletterPrompt />
       <BottomNav />
     </>
   )
