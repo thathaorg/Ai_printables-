@@ -6,13 +6,13 @@ import { resolve } from "path";
 // ✅ Explicitly load your .env before Prisma reads it
 dotenv.config({ path: resolve(process.cwd(), ".env") });
 
-const resolvedDatabaseUrl = process.env.DATABASE_URL2 ?? process.env.DATABASE_URL ?? "";
-
-if (!resolvedDatabaseUrl) {
-  throw new Error(
-    "Prisma configuration error: DATABASE_URL2 (or legacy DATABASE_URL) must be set."
-  );
-}
+// `prisma generate` (run on every install) doesn't need a real database —
+// only migrate/db push do. Fall back to a placeholder instead of crashing
+// builds on machines without env vars.
+const resolvedDatabaseUrl =
+  process.env.DATABASE_URL2 ??
+  process.env.DATABASE_URL ??
+  "postgresql://placeholder:placeholder@localhost:5432/placeholder";
 
 // Normalize to DATABASE_URL for Prisma consumption.
 process.env.DATABASE_URL = resolvedDatabaseUrl;
