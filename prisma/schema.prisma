@@ -70,19 +70,40 @@ model Lead {
 
 // One AI worksheet generation through the preset pipeline
 model Generation {
-  id        String   @id @default(cuid())
-  preset    String
-  options   Json
-  prompt    String
-  imageUrl  String?
-  status    String   @default("succeeded") // succeeded | failed | safety_blocked
-  anonId    String?
-  email     String?
-  bridgeId  String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  preset     String
+  options    Json
+  prompt     String
+  promptHash String?
+  imageUrl   String?
+  status     String   @default("succeeded") // succeeded | failed | safety_blocked | cache_hit | failed_fallback
+  anonId     String?
+  email      String?
+  bridgeId   String?
+  createdAt  DateTime @default(now())
 
   @@index([anonId])
   @@index([email])
+  @@index([promptHash])
+}
+
+// Full-quality worksheet reuse: first gen pays AI; identical options serve from cache ($0).
+// Prefer WORKSHEET_CACHE_DIR on a VPS for files; otherwise imageData is stored in Neon.
+model WorksheetCache {
+  id         String   @id @default(cuid())
+  promptHash String   @unique
+  preset     String
+  options    Json
+  mimeType   String   @default("image/png")
+  /// Absolute or relative path when using disk cache (WORKSHEET_CACHE_DIR)
+  filePath   String?
+  /// PNG/JPEG bytes when DB-backed (no VPS disk)
+  imageData  Bytes?
+  hitCount   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([preset])
 }
 
 // Funnel tracking event (bridge/preset/gate/delivery), always carries bridge + UTM

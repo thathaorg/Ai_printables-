@@ -1,264 +1,140 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { HelpCircle, Palette, PenTool, Download, Printer, Sparkles, ArrowRight } from "lucide-react"
-import MobileHeader from "@/components/mobile-header"
-import MobileSidebar from "@/components/mobile-sidebar"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { useTranslations } from "@/hooks/use-translations"
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import MobileHeader from "@/components/mobile-header";
+import MobileSidebar from "@/components/mobile-sidebar";
+import { PRINTABLE_KINDS } from "@/lib/printable-catalog";
+import {
+  Sparkles,
+  Eye,
+  Mail,
+  Download,
+  ArrowRight,
+  CheckCircle2,
+} from "lucide-react";
+
+const STEPS = [
+  {
+    n: "1",
+    title: "Pick a template",
+    text: "Letters, numbers, coloring, or counting — no AI prompt to write.",
+    icon: Sparkles,
+  },
+  {
+    n: "2",
+    title: "Choose options",
+    text: "Age, style, letter, topic. The bridge may already fill some for you.",
+    icon: CheckCircle2,
+  },
+  {
+    n: "3",
+    title: "Preview first",
+    text: "See the worksheet on screen before you enter an email.",
+    icon: Eye,
+  },
+  {
+    n: "4",
+    title: "Unlock the PDF",
+    text: "Email + one newsletter · download instantly · also sent to inbox.",
+    icon: Download,
+  },
+];
 
 export default function HowToUsePage() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
-  const router = useRouter()
-  const { t, isLoading } = useTranslations()
-
-  const steps = [
-    {
-      icon: Palette,
-      title: isLoading ? "Choose Coloring Mode" : t('howToUse.quickStart.step1.title'),
-      description: isLoading ? "Tap the 'Coloring' button to create coloring pages" : t('howToUse.quickStart.step1.description'),
-      details: isLoading ? "Select from suggested prompts or type your own idea" : t('howToUse.quickStart.step1.details'),
-    },
-    {
-      icon: PenTool,
-      title: isLoading ? "Choose Tracing Mode" : t('howToUse.quickStart.step2.title'),
-      description: isLoading ? "Tap the 'Tracing' button to create tracing worksheets" : t('howToUse.quickStart.step2.description'),
-      details: isLoading ? "Practice letters, numbers, and words with guided tracing" : t('howToUse.quickStart.step2.details'),
-    },
-    {
-      icon: Sparkles,
-      title: isLoading ? "Generate Content" : t('howToUse.quickStart.step3.title'),
-      description: isLoading ? "Enter a prompt or click a suggested prompt" : t('howToUse.quickStart.step3.description'),
-      details: isLoading ? "Our AI will create a custom coloring page or tracing worksheet" : t('howToUse.quickStart.step3.details'),
-    },
-    {
-      icon: Download,
-      title: isLoading ? "Download & Print" : t('howToUse.quickStart.step4.title'),
-      description: isLoading ? "Download your creation or print it directly" : t('howToUse.quickStart.step4.description'),
-      details: isLoading ? "Sign in to access unlimited downloads and saves" : t('howToUse.quickStart.step4.details'),
-    },
-  ]
-
-  const features = [
-    {
-      title: isLoading ? "Suggested Prompts" : t('howToUse.featuresGuide.suggestedPrompts.title'),
-      description: isLoading ? "Use our curated prompts for instant inspiration" : t('howToUse.featuresGuide.suggestedPrompts.description'),
-      tips: isLoading ? ["Try 'A butterfly on a flower'", "Use 'Trace Alphabet A'", "Explore animal themes"] : [
-        t('howToUse.featuresGuide.suggestedPrompts.tip1'),
-        t('howToUse.featuresGuide.suggestedPrompts.tip2'),
-        t('howToUse.featuresGuide.suggestedPrompts.tip3'),
-      ],
-    },
-    {
-      title: isLoading ? "Custom Prompts" : t('howToUse.featuresGuide.customPrompts.title'),
-      description: isLoading ? "Type your own ideas for personalized content" : t('howToUse.featuresGuide.customPrompts.description'),
-      tips: isLoading ? ["Be specific: 'A red car'", "Add details: 'A happy dog playing'", "Keep it simple for kids"] : [
-        t('howToUse.featuresGuide.customPrompts.tip1'),
-        t('howToUse.featuresGuide.customPrompts.tip2'),
-        t('howToUse.featuresGuide.customPrompts.tip3'),
-      ],
-    },
-    {
-      title: isLoading ? "Age-Appropriate Content" : t('howToUse.featuresGuide.ageAppropriate.title'),
-      description: isLoading ? "All content is designed for children aged 2-8" : t('howToUse.featuresGuide.ageAppropriate.description'),
-      tips: isLoading ? ["Simple shapes and lines", "Large coloring areas", "Clear tracing guides"] : [
-        t('howToUse.featuresGuide.ageAppropriate.tip1'),
-        t('howToUse.featuresGuide.ageAppropriate.tip2'),
-        t('howToUse.featuresGuide.ageAppropriate.tip3'),
-      ],
-    },
-    {
-      title: isLoading ? "Mobile-Friendly" : t('howToUse.featuresGuide.mobileFriendly.title'),
-      description: isLoading ? "Optimized for phones and tablets" : t('howToUse.featuresGuide.mobileFriendly.description'),
-      tips: isLoading ? ["Touch-friendly interface", "Easy navigation", "Works offline after generation"] : [
-        t('howToUse.featuresGuide.mobileFriendly.tip1'),
-        t('howToUse.featuresGuide.mobileFriendly.tip2'),
-        t('howToUse.featuresGuide.mobileFriendly.tip3'),
-      ],
-    },
-  ]
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
-      {/* Mobile Header */}
-      <MobileHeader onMenuToggle={toggleSidebar} isMenuOpen={isSidebarOpen} />
-      <MobileSidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        currentPage="how-to-use"
+    <main className="relative min-h-screen pb-28 text-[var(--ink)]">
+      <MobileHeader
+        onMenuToggle={() => setIsSidebarOpen((p) => !p)}
+        isMenuOpen={isSidebarOpen}
       />
+      <MobileSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* Main Content */}
-      <div className="pt-20">
-        <div className="container max-w-5xl mx-auto px-5 py-10">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="flex justify-center mb-4">
-              <HelpCircle className="h-12 w-12 text-orange-600" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-orange-700 mb-3">
-              {isLoading ? "How to Use Kiwiz" : t('howToUse.title')}
-            </h1>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto">
-              {isLoading ? "Learn how to create amazing coloring pages and tracing worksheets for your children." : t('howToUse.subtitle')}
-            </p>
-          </div>
+      <div className="mx-auto max-w-4xl px-4 pt-24 sm:px-6">
+        <header className="mb-10 text-center">
+          <p className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[var(--kiwi)]">
+            How Kiwiz works
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">
+            Generate first. Gate second.
+          </h1>
+          <p className="mx-auto mt-3 max-w-lg text-[var(--ink)]/75">
+            You always see the printable before sharing an email. That&apos;s the whole product.
+          </p>
+        </header>
 
-          {/* Quick Start Steps */}
-          <Card className="mb-10 bg-yellow-50 border border-yellow-200 shadow-lg rounded-2xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-700">
-                <Sparkles className="h-5 w-5 text-orange-600" />
-                {isLoading ? "Quick Start Guide" : t('howToUse.quickStart.title')}
-              </CardTitle>
-              <CardDescription className="text-gray-600">
-                {isLoading ? "Follow these simple steps to get started." : t('howToUse.quickStart.description')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 gap-6">
-                {steps.map((step, index) => {
-                  const Icon = step.icon
-                  return (
-                    <div
-                      key={index}
-                      className="flex gap-4 bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all"
-                    >
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                          <Icon className="h-6 w-6 text-orange-600" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-1">{step.title}</h3>
-                        <p className="text-gray-600 mb-1">{step.description}</p>
-                        <p className="text-sm text-gray-500">{step.details}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Features Guide */}
-          <div className="grid sm:grid-cols-2 gap-6 mb-10">
-            {features.map((feature, index) => (
-              <Card
-                key={index}
-                className="bg-white border border-orange-100 shadow-md hover:shadow-lg rounded-2xl transition-all"
+        <ol className="mb-12 grid gap-4 sm:grid-cols-2">
+          {STEPS.map((s) => {
+            const Icon = s.icon;
+            return (
+              <li
+                key={s.n}
+                className="rounded-[1.5rem] bg-white p-5 shadow-[0_12px_32px_-18px_rgba(30,41,53,0.25)] ring-1 ring-black/5"
               >
-                <CardHeader>
-                  <CardTitle className="text-orange-700 font-semibold">{feature.title}</CardTitle>
-                  <CardDescription className="text-gray-700">{feature.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm text-gray-600">Pro Tips:</h4>
-                    <ul className="space-y-1">
-                      {feature.tips.map((tip, tipIndex) => (
-                        <li
-                          key={tipIndex}
-                          className="flex items-start gap-2 text-sm text-gray-700"
-                        >
-                          <ArrowRight className="h-3 w-3 text-orange-500 mt-1 flex-shrink-0" />
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--kiwi)] font-display text-lg font-bold text-white">
+                    {s.n}
+                  </span>
+                  <Icon className="h-5 w-5 text-[var(--kiwi)]" />
+                </div>
+                <h2 className="mt-3 font-display text-xl font-bold">{s.title}</h2>
+                <p className="mt-1 text-sm text-[var(--ink)]/70">{s.text}</p>
+              </li>
+            );
+          })}
+        </ol>
+
+        <section className="mb-12">
+          <h2 className="mb-4 text-center font-display text-2xl font-bold">
+            What kinds of printables?
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {PRINTABLE_KINDS.map((p) => (
+              <Link
+                key={p.id}
+                href={`/create?preset=${p.id}`}
+                className={`overflow-hidden rounded-2xl p-2 ${p.tint} ring-1 ring-black/5`}
+              >
+                <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-white">
+                  <Image src={p.preview} alt={p.sample} fill className="object-cover object-top" sizes="160px" />
+                </div>
+                <p className={`mt-2 text-center font-display text-sm font-bold ${p.accent}`}>
+                  {p.shortTitle}
+                </p>
+              </Link>
             ))}
           </div>
+        </section>
 
-          {/* Detailed Instructions */}
-          <Card className="mb-10 bg-orange-50 border border-orange-200 rounded-2xl shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-orange-700 font-semibold">Detailed Instructions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              <div>
-                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-orange-700">
-                  <Palette className="h-5 w-5 text-orange-600" />
-                  Creating Coloring Pages
-                </h3>
-                <ol className="space-y-2 ml-6 text-gray-700">
-                  {[
-                    'Tap the "Coloring" button on the main screen',
-                    "Type your idea in the search bar or click a suggested prompt",
-                    "Wait for the AI to generate your coloring page",
-                    "Download or print your creation",
-                  ].map((text, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="bg-orange-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
-                        {i + 1}
-                      </span>
-                      <span>{text}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+        <section className="mb-12 rounded-[1.75rem] bg-white p-6 ring-1 ring-black/5">
+          <h2 className="font-display text-xl font-bold flex items-center gap-2">
+            <Mail className="h-5 w-5 text-[var(--coral)]" /> Why we ask for email
+          </h2>
+          <p className="mt-2 text-sm text-[var(--ink)]/75 leading-relaxed">
+            After you preview, enter your email to unlock the free A4 PDF. You pick at least one
+            free printable club so we can send new worksheets. We also email the PDF so you
+            don&apos;t lose it.
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-[var(--ink)]/80">
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--kiwi)]" /> 3 free generations/day as guest, 6 when logged in</li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--kiwi)]" /> Kid-safety check on every image</li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--kiwi)]" /> Bridge pages never collect email</li>
+          </ul>
+        </section>
 
-              <div>
-                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-green-700">
-                  <PenTool className="h-5 w-5 text-green-600" />
-                  Creating Tracing Worksheets
-                </h3>
-                <ol className="space-y-2 ml-6 text-gray-700">
-                  {[
-                    'Tap the "Tracing" button on the main screen',
-                    'Choose a tracing prompt like "Trace Alphabet A" or "Trace number 5"',
-                    "Wait for the AI to create your tracing worksheet",
-                    "Download or print for handwriting practice",
-                  ].map((text, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">
-                        {i + 1}
-                      </span>
-                      <span>{text}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Troubleshooting */}
-          <Card className="bg-red-50 border border-red-200 rounded-2xl shadow-md mb-10">
-            <CardHeader>
-              <CardTitle className="text-red-600 font-semibold">{isLoading ? "Troubleshooting" : t('howToUse.troubleshooting.title')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-gray-700">
-              <div>
-                <h3 className="font-semibold mb-1">{isLoading ? "Content not generating?" : t('howToUse.troubleshooting.notGenerating.question')}</h3>
-                <p>{isLoading ? "Check your internet connection or try simpler prompts." : t('howToUse.troubleshooting.notGenerating.answer')}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">{isLoading ? "Can't download or print?" : t('howToUse.troubleshooting.cannotDownload.question')}</h3>
-                <p>{isLoading ? "Sign in to your account for unlimited downloads. Free users have limited daily access." : t('howToUse.troubleshooting.cannotDownload.answer')}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">{isLoading ? "Content not appropriate?" : t('howToUse.troubleshooting.notAppropriate.question')}</h3>
-                <p>{isLoading ? "All designs are made for ages 2–8. Please report any issue to our support team." : t('howToUse.troubleshooting.notAppropriate.answer')}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Start Creating Button */}
-          <div className="text-center">
-            <Button
-              onClick={() => router.push("/create")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all"
-            >
-              {isLoading ? "Start Creating Now" : t('howToUse.startCreating')}
-            </Button>
-          </div>
+        <div className="mb-16 text-center">
+          <Link
+            href="/create"
+            className="btn-chunky btn-primary-chunky inline-flex items-center gap-2 px-8 py-4 text-lg"
+          >
+            Start in the studio
+            <ArrowRight className="h-5 w-5" />
+          </Link>
         </div>
       </div>
-    </div>
-  )
+    </main>
+  );
 }

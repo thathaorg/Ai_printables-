@@ -25,9 +25,9 @@ const defaultKeywords = [
 
 const siteConfig = {
   name: 'Kiwiz',
-  description: 'AI-powered coloring pages and tracing worksheets for kids aged 2-8',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-coloring-and-tracing.vercel.app',
-  ogImage: '/og-image.png',
+  description: 'Free printable worksheets for toddlers — presets for coloring, tracing, and counting. No account needed.',
+  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-printables.vercel.app',
+  ogImage: '/brand/printables-float.png',
   twitterHandle: '@kiwiz_app',
 };
 
@@ -112,7 +112,7 @@ export function generateOrganizationSchema() {
     name: siteConfig.name,
     description: siteConfig.description,
     url: siteConfig.url,
-    logo: `${siteConfig.url}/placeholder-logo.png`,
+    logo: `${siteConfig.url}/brand/logo.svg`,
     sameAs: [
       // Add social media URLs here when available
     ],
@@ -184,7 +184,7 @@ export function generateArticleSchema(article: {
       name: siteConfig.name,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteConfig.url}/placeholder-logo.png`,
+        url: `${siteConfig.url}/brand/logo.svg`,
       },
     },
   };

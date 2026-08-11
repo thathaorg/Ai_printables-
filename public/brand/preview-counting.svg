@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 340" fill="none">
+  <rect width="280" height="340" rx="28" fill="#FFF8E0"/>
+  <rect x="14" y="14" width="252" height="312" rx="22" fill="#FFFFFF" stroke="#F0D98A" stroke-width="3"/>
+  <text x="28" y="42" fill="#8A7040" font-family="Nunito,sans-serif" font-size="11" font-weight="700">Name: ______  Date: ____</text>
+  <path d="M28 54h224" stroke="#F5EABB" stroke-width="2"/>
+  <!-- 4 boxes -->
+  <rect x="30" y="70" width="100" height="110" rx="16" fill="#FFF9EC" stroke="#E8C75C" stroke-width="3"/>
+  <rect x="150" y="70" width="100" height="110" rx="16" fill="#FFF9EC" stroke="#E8C75C" stroke-width="3"/>
+  <rect x="30" y="198" width="100" height="110" rx="16" fill="#FFF9EC" stroke="#E8C75C" stroke-width="3"/>
+  <rect x="150" y="198" width="100" height="110" rx="16" fill="#FFF9EC" stroke="#E8C75C" stroke-width="3"/>
+  <!-- farm animals as simple icons in first box - 2 cows -->
+  <g transform="translate(48 92)">
+    <ellipse cx="18" cy="22" rx="16" ry="12" fill="none" stroke="#5A4A3A" stroke-width="2.5"/>
+    <circle cx="30" cy="14" r="7" fill="none" stroke="#5A4A3A" stroke-width="2.5"/>
+    <ellipse cx="55" cy="28" rx="14" ry="10" fill="none" stroke="#5A4A3A" stroke-width="2.5"/>
+    <circle cx="66" cy="20" r="6" fill="none" stroke="#5A4A3A" stroke-width="2.5"/>
+  </g>
+  <text x="48" y="162" fill="#C9A84A" font-family="Fredoka,sans-serif" font-size="12" font-weight="700">1  2  3  4  5</text>
+  <!-- box 2 - 4 apples -->
+  <g transform="translate(164 88)" fill="none" stroke="#E86A4A" stroke-width="2.5">
+    <circle cx="14" cy="14" r="9"/><circle cx="40" cy="14" r="9"/>
+    <circle cx="14" cy="40" r="9"/><circle cx="40" cy="40" r="9"/>
+  </g>
+  <text x="168" y="162" fill="#C9A84A" font-family="Fredoka,sans-serif" font-size="12" font-weight="700">1  2  3  4  5</text>
+  <!-- box 3 - 3 fish -->
+  <g transform="translate(42 222)" fill="none" stroke="#3FA9E0" stroke-width="2.5">
+    <ellipse cx="18" cy="16" rx="12" ry="8"/><path d="M6 16l-6-6v12z"/>
+    <ellipse cx="50" cy="16" rx="12" ry="8"/><path d="M38 16l-6-6v12z"/>
+    <ellipse cx="34" cy="40" rx="12" ry="8"/><path d="M22 40l-6-6v12z"/>
+  </g>
+  <text x="48" y="290" fill="#C9A84A" font-family="Fredoka,sans-serif" font-size="12" font-weight="700">1  2  3  4  5</text>
+  <!-- box 4 - 5 stars -->
+  <g transform="translate(162 218)" fill="none" stroke="#F0A020" stroke-width="2">
+    <path d="M18 6l3 8h8l-6 5 2 8-7-5-7 5 2-8-6-5h8z"/>
+    <path d="M50 6l3 8h8l-6 5 2 8-7-5-7 5 2-8-6-5h8z"/>
+    <path d="M34 28l3 8h8l-6 5 2 8-7-5-7 5 2-8-6-5h8z"/>
+    <path d="M10 36l2.5 6h6l-5 4 2 6-5.5-4-5.5 4 2-6-5-4h6z"/>
+    <path d="M58 36l2.5 6h6l-5 4 2 6-5.5-4-5.5 4 2-6-5-4h6z"/>
+  </g>
+  <text x="168" y="290" fill="#C9A84A" font-family="Fredoka,sans-serif" font-size="12" font-weight="700">1  2  3  4  5</text>
+</svg>

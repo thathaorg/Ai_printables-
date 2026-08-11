@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- soft shadow -->
+  <ellipse cx="100" cy="175" rx="48" ry="10" fill="#000" opacity="0.08"/>
+  <!-- body -->
+  <ellipse cx="100" cy="118" rx="58" ry="52" fill="#6B4F3A"/>
+  <ellipse cx="100" cy="118" rx="48" ry="42" fill="#8B6A4A"/>
+  <!-- belly -->
+  <ellipse cx="100" cy="128" rx="28" ry="26" fill="#E8C78A"/>
+  <!-- head fluff -->
+  <ellipse cx="100" cy="72" rx="42" ry="38" fill="#6B4F3A"/>
+  <ellipse cx="100" cy="74" rx="34" ry="30" fill="#8B6A4A"/>
+  <!-- face -->
+  <ellipse cx="100" cy="80" rx="26" ry="22" fill="#F5E6C8"/>
+  <!-- eyes -->
+  <circle cx="88" cy="78" r="6" fill="#2B2B2B"/>
+  <circle cx="112" cy="78" r="6" fill="#2B2B2B"/>
+  <circle cx="90" cy="76" r="2" fill="#fff"/>
+  <circle cx="114" cy="76" r="2" fill="#fff"/>
+  <!-- blush -->
+  <ellipse cx="78" cy="86" rx="6" ry="3.5" fill="#FF9A8B" opacity="0.7"/>
+  <ellipse cx="122" cy="86" rx="6" ry="3.5" fill="#FF9A8B" opacity="0.7"/>
+  <!-- beak -->
+  <path d="M100 86c-4 8-4 14 0 18 4-4 4-10 0-18z" fill="#F0A020"/>
+  <path d="M100 86c-2 4-2 8 0 10" stroke="#D4880A" stroke-width="1.5"/>
+  <!-- feet -->
+  <path d="M78 160c-8 8-4 14 4 12" stroke="#F0A020" stroke-width="6" stroke-linecap="round"/>
+  <path d="M122 160c8 8 4 14-4 12" stroke="#F0A020" stroke-width="6" stroke-linecap="round"/>
+  <!-- crayon held -->
+  <rect x="138" y="100" width="14" height="48" rx="4" transform="rotate(25 145 124)" fill="#FF6B5A"/>
+  <path d="M154 92l12 8-6 10-12-8z" fill="#FFB0A6" transform="rotate(25 145 124)"/>
+  <!-- star badge -->
+  <circle cx="48" cy="60" r="18" fill="#FFD56A"/>
+  <path d="M48 48l3.5 8h8.5l-7 5.5 2.5 8.5-7.5-5.5-7.5 5.5 2.5-8.5-7-5.5h8.5z" fill="#fff" opacity="0.9"/>
+</svg>

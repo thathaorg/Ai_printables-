@@ -31,15 +31,18 @@ export async function POST(req: Request) {
     const { prisma } = result.context;
 
     const body = await req.json();
-    const { kindeId, email, name, image, plan, isAdmin } = body;
+    const { email, name, image, plan, isAdmin } = body;
 
-    if (!email || !kindeId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
+
+    // Legacy unique field (was Kinde subject). Not used for login anymore.
+    const externalId = `manual_${crypto.randomUUID()}`;
 
     const newUser = await prisma.user.create({
       data: {
-        kindeId,
+        kindeId: externalId,
         email,
         name,
         image,

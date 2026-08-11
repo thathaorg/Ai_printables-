@@ -7,7 +7,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", email: "", plan: "", isAdmin: false });
-  const [createForm, setCreateForm] = useState({ email: "", kindeId: "", name: "" });
+  const [createForm, setCreateForm] = useState({ email: "", name: "" });
 
   async function fetchUsers() {
     setLoading(true);
@@ -24,7 +24,7 @@ export default function AdminUsersPage() {
       body: JSON.stringify(createForm),
     });
     if (res.ok) {
-      setCreateForm({ email: "", kindeId: "", name: "" });
+      setCreateForm({ email: "", name: "" });
       fetchUsers();
     }
   }
@@ -81,13 +81,6 @@ export default function AdminUsersPage() {
           placeholder="Email"
           value={createForm.email}
           onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-          className="border p-2 rounded"
-        />
-        <input
-          type="text"
-          placeholder="Kinde ID"
-          value={createForm.kindeId}
-          onChange={(e) => setCreateForm({ ...createForm, kindeId: e.target.value })}
           className="border p-2 rounded"
         />
         <button

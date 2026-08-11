@@ -40,10 +40,21 @@ export default function AdminSidebar() {
       </div>
 
       {/* Bottom section */}
-      <div className="mb-6 px-3">
+      <div className="mb-6 space-y-2 px-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-center text-sm"
+          onClick={async () => {
+            await fetch("/api/admin/logout", { method: "POST" });
+            window.location.href = "/admin-login";
+          }}
+        >
+          Log out
+        </Button>
         <Link href="/">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             className="w-full justify-center text-sm font-medium hover:bg-muted"
           >

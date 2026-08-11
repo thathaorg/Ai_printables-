@@ -1,92 +1,136 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import Image from "next/image";
+import BrandLogo from "@/components/brand-logo";
+import { prefersReducedMotion, EASE_BOUNCE } from "@/lib/motion";
 
 interface SplashScreenProps {
-  onComplete: () => void
+  onComplete: () => void;
 }
 
+/** First-visit splash: brand moment → purpose (printables) → studio. */
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
-  const [progress, setProgress] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setTimeout(onComplete, 500)
-          return 100
-        }
-        return prev + 2
-      })
-    }, 50)
+    const root = rootRef.current;
+    if (!root) return;
 
-    return () => clearInterval(interval)
-  }, [onComplete])
+    if (prefersReducedMotion()) {
+      const t = setTimeout(onComplete, 600);
+      return () => clearTimeout(t);
+    }
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        onComplete,
+      });
+
+      tl.from(".splash-logo", {
+        scale: 0.4,
+        rotation: -12,
+        opacity: 0,
+        duration: 0.7,
+        ease: EASE_BOUNCE,
+      })
+        .from(
+          ".splash-title",
+          { y: 24, opacity: 0, duration: 0.45, ease: "power3.out" },
+          "-=0.25"
+        )
+        .from(
+          ".splash-sub",
+          { y: 16, opacity: 0, duration: 0.4 },
+          "-=0.2"
+        )
+        .from(
+          ".splash-chip",
+          { scale: 0, opacity: 0, stagger: 0.08, duration: 0.4, ease: EASE_BOUNCE },
+          "-=0.15"
+        )
+        .to(
+          barRef.current,
+          { scaleX: 1, duration: 1.1, ease: "power1.inOut" },
+          "-=0.3"
+        )
+        .to(root, { autoAlpha: 0, duration: 0.35, delay: 0.15 });
+
+      gsap.to(".splash-float", {
+        y: -12,
+        rotation: "+=6",
+        duration: 1.6,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut",
+        stagger: 0.2,
+      });
+    }, root);
+
+    return () => ctx.revert();
+  }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-background via-muted to-background flex items-center justify-center overflow-hidden">
-      {/* Floating decorative elements */}
-      <div
-        className="absolute top-20 left-10 w-16 h-16 bg-accent rounded-full animate-float opacity-60"
-        style={{ animationDelay: "0s" }}
-      />
-      <div
-        className="absolute top-32 right-16 w-12 h-12 bg-secondary rounded-full animate-float opacity-70"
-        style={{ animationDelay: "1s" }}
-      />
-      <div
-        className="absolute bottom-40 left-20 w-20 h-20 bg-primary/30 rounded-full animate-float opacity-50"
-        style={{ animationDelay: "2s" }}
-      />
-      <div
-        className="absolute bottom-20 right-10 w-14 h-14 bg-accent/60 rounded-full animate-float opacity-60"
-        style={{ animationDelay: "0.5s" }}
-      />
-
-      {/* Letter decorations */}
-      <div
-        className="absolute top-16 right-32 text-6xl font-bold text-primary/40 animate-bounce-gentle"
-        style={{ animationDelay: "1.5s" }}
-      >
-        A
-      </div>
-      <div
-        className="absolute bottom-32 left-16 text-5xl font-bold text-secondary/50 animate-bounce-gentle"
-        style={{ animationDelay: "2.5s" }}
-      >
-        Z
+    <div
+      ref={rootRef}
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#eef8f4]"
+    >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-10 top-16 h-48 w-48 rounded-full bg-[#B8E4FF]/50 blur-3xl" />
+        <div className="absolute -right-8 bottom-20 h-56 w-56 rounded-full bg-[#FFE5B4]/55 blur-3xl" />
       </div>
 
-      {/* Main content */}
-      <div className="text-center z-10">
-        <h1 className="text-8xl font-bold text-primary mb-8 animate-pulse-glow">Kiwiz</h1>
+      <Image
+        src="/brand/sticker-star.svg"
+        alt=""
+        width={48}
+        height={48}
+        className="splash-float absolute left-[12%] top-[22%]"
+      />
+      <Image
+        src="/brand/sticker-crayon.svg"
+        alt=""
+        width={56}
+        height={56}
+        className="splash-float absolute right-[14%] top-[30%]"
+      />
+      <Image
+        src="/brand/sticker-paper.svg"
+        alt=""
+        width={52}
+        height={52}
+        className="splash-float absolute bottom-[22%] left-[18%]"
+      />
 
-        <div className="w-64 h-2 bg-muted rounded-full mx-auto mb-4 overflow-hidden">
+      <div className="relative z-10 flex flex-col items-center px-6 text-center">
+        <div className="splash-logo mb-4">
+          <BrandLogo href={undefined} size={72} showWordmark={false} />
+        </div>
+        <h1 className="splash-title font-display text-5xl font-bold text-[var(--ink)] sm:text-6xl">
+          KI<span className="text-[var(--kiwi)]">WIZ</span>
+        </h1>
+        <p className="splash-sub mt-2 max-w-xs text-[var(--ink-soft)]">
+          Printables kids color, trace &amp; count — ready in a minute.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {["Letters", "Numbers", "Coloring", "Counting"].map((label) => (
+            <span
+              key={label}
+              className="splash-chip rounded-full bg-white px-3 py-1 font-display text-xs font-bold text-[var(--ink)] shadow-sm ring-1 ring-black/5"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+        <div className="mt-8 h-1.5 w-48 overflow-hidden rounded-full bg-black/5">
           <div
-            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
+            ref={barRef}
+            className="h-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-[var(--kiwi)] via-[var(--sun)] to-[var(--coral)]"
           />
         </div>
-
-        <p className="text-lg text-muted-foreground font-medium">Loading magical activities...</p>
-      </div>
-
-      {/* Sparkle effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-primary rounded-full animate-ping opacity-40"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
       </div>
     </div>
-  )
+  );
 }

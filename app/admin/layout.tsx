@@ -1,49 +1,20 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
-import BottomNav from "@/components/ui/BottomNav";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { isAdminSession } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user) redirect("/api/auth/login");
-
-  if (!process.env.DATABASE_URL) {
-    console.warn("DATABASE_URL is not configured. Admin dashboard disabled.");
-    redirect("/");
+  if (!(await isAdminSession())) {
+    redirect("/admin-login");
   }
 
-  const { prisma } = await import("@/lib/prisma");
-
-  const dbUser = await prisma.user.findFirst({
-    where: { OR: [{ email: user.email! }, { kindeId: user.id }] },
-    select: { isAdmin: true },
-  });
-
-  if (!dbUser?.isAdmin) redirect("/");
-
   return (
-    <div className="flex flex-col min-h-screen bg-background relative">
-      <div className="flex flex-1">
-        {/* Sidebar (fixed on left) */}
-        <AdminSidebar />
-
-        {/* Main content area */}
-        <main className="flex-1 ml-48 p-6 pb-24 overflow-y-auto">{children}</main>
-      </div>
-
-      {/* ✅ Fixed BottomNav covering background */}
-      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg">
-        <div className="absolute inset-0 bg-background" /> {/* Solid background cover */}
-        <div className="relative z-10">
-          <BottomNav />
-        </div>
-      </footer>
+    <div className="flex min-h-screen bg-background">
+      <AdminSidebar />
+      <main className="ml-48 flex-1 overflow-y-auto p-6 pb-24">{children}</main>
     </div>
   );
 }

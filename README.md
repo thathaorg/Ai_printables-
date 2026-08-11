@@ -1,6 +1,6 @@
-# Kiwiz — AI Coloring Pages & Tracing Worksheets
+# Kiwiz — AI Printables for Toddlers
 
-Type an idea, and AI draws a printable A4 **coloring page** or **tracing worksheet** for kids. Built with Next.js 16, Prisma + PostgreSQL (Neon), Kinde auth, Stripe subscriptions, and OpenRouter (Gemini) for image generation. Hosted on Vercel.
+Preset worksheets (not open prompts): coloring pages, alphabet tracing, number tracing, and counting sheets. Print-ready A4 PDF, email-gated download.
 
 ## Quick start
 
@@ -9,8 +9,12 @@ pnpm install
 pnpm dev        # http://localhost:3000
 ```
 
-Requires a `.env` file (git-ignored) — see the environment variable reference in [DOCUMENTATION.md](DOCUMENTATION.md).
+Requires a `.env` file (git-ignored). Full handbook: **[DOCUMENTATION.md](DOCUMENTATION.md)**.
 
-## Documentation
+## Core product
 
-Full documentation — what the app does, architecture, folder map, env keys, current status, and fix roadmap — lives in **[DOCUMENTATION.md](DOCUMENTATION.md)**.
+1. Bridge page → `/create` with options pre-filled  
+2. Pick template + options → AI generates  
+3. Preview → email → join ≥1 newsletter → PDF unlock + inbox  
+
+Live: [ai-printables.vercel.app](https://ai-printables.vercel.app)

@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Fredoka } from "next/font/google"
+import { Fredoka, Nunito } from "next/font/google"
 import "../styles/globals.css"
 import { AuthProvider } from "./AuthProvider"
 import ClientLayout from "@/components/ClientLayout"
@@ -11,23 +11,27 @@ import { generateMetadata as generateSEOMetadata, generateOrganizationSchema, ge
 const fredoka = Fredoka({
   subsets: ["latin"],
   variable: "--font-fredoka",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
+})
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  weight: ["400", "500", "600", "700", "800"],
 })
 
 export const metadata: Metadata = generateSEOMetadata({
-  title: "Kiwiz - AI Coloring Pages & Tracing Worksheets for Kids",
-  description: "Create personalized coloring pages and alphabet tracing worksheets for children aged 2-8 using AI. Free to try, instant results, safe for kids.",
+  title: "Kiwiz – AI Printables for Toddlers",
+  description:
+    "Make print-ready coloring pages and tracing worksheets in seconds. Pick a template, tweak a few options, print. Safe for ages 2–5.",
   keywords: [
     "AI coloring pages",
     "tracing worksheets",
-    "kids activities",
-    "educational worksheets",
+    "printable worksheets toddlers",
     "alphabet tracing",
-    "preschool activities",
-    "toddler learning",
-    "printable coloring pages",
-    "handwriting practice",
-    "children education"
+    "preschool printables",
+    "kids coloring pages free",
+    "AI printables",
   ],
 })
 
@@ -36,12 +40,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const organizationSchema = generateOrganizationSchema();
-  const webAppSchema = generateWebApplicationSchema();
+  const organizationSchema = generateOrganizationSchema()
+  const webAppSchema = generateWebApplicationSchema()
 
   return (
     <AuthProvider>
-      <html lang="en" className={`${fredoka.variable} antialiased`}>
+      <html lang="en" className={`${fredoka.variable} ${nunito.variable} antialiased`}>
         <head>
           <script
             type="application/ld+json"
@@ -52,8 +56,7 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
           />
         </head>
-        <body className="overflow-x-hidden">
-          {/* ✅ Wrap your entire app in the ToastProvider */}
+        <body className="overflow-x-hidden font-sans">
           <ToastProviderWrapper>
             <ClientLayout>{children}</ClientLayout>
           </ToastProviderWrapper>

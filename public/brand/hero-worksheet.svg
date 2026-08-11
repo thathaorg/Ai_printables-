@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" fill="none">
+  <rect width="480" height="600" rx="24" fill="#FFFDF8" stroke="#1E2935" stroke-width="4"/>
+  <text x="40" y="48" fill="#1E2935" font-family="Nunito, sans-serif" font-size="16" font-weight="700">Name: ________  Date: ______</text>
+  <path d="M40 72h400" stroke="#E6E0D4" stroke-width="2"/>
+  <!-- big letter A outline -->
+  <path d="M160 420 L240 140 L320 420" stroke="#1E2935" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M192 320h96" stroke="#1E2935" stroke-width="14" stroke-linecap="round"/>
+  <!-- dashed practice row -->
+  <path d="M60 470 C90 430 120 510 150 470 C180 430 210 510 240 470 C270 430 300 510 330 470 C360 430 390 510 420 470" stroke="#A8B0BA" stroke-width="4" stroke-dasharray="8 10" fill="none" stroke-linecap="round"/>
+  <path d="M80 520 C110 480 140 560 170 520 C200 480 230 560 260 520 C290 480 320 560 350 520 C380 480 400 540 420 520" stroke="#C5CCD4" stroke-width="3" stroke-dasharray="6 9" fill="none" stroke-linecap="round"/>
+  <!-- apple doodle -->
+  <circle cx="400" cy="120" r="28" fill="none" stroke="#1E2935" stroke-width="4"/>
+  <path d="M400 92c0-10 10-18 18-14" stroke="#0F9F6E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M392 100c8-14 18-10 20 2" fill="#0F9F6E"/>
+  <!-- stickers -->
+  <circle cx="70" cy="130" r="18" fill="#FFB020" stroke="#1E2935" stroke-width="3"/>
+  <path d="M62 130h16M70 122v16" stroke="#1E2935" stroke-width="3" stroke-linecap="round"/>
+</svg>

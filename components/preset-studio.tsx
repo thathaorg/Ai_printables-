@@ -4,14 +4,38 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, Lock, Download, Mail, Sparkles, CheckCircle2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Loader2,
+  Lock,
+  Download,
+  Mail,
+  Sparkles,
+  CheckCircle2,
+  Gift,
+  Zap,
+  AlertTriangle,
+  Printer,
+  Library,
+} from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 import { captureFunnelFromUrl, getFunnel, track } from "@/lib/funnel";
+import { getPrintableKind } from "@/lib/printable-catalog";
+import SampleImage from "@/components/sample-image";
+import GenerateAura from "@/components/motion/GenerateAura";
+import ConfettiBurst from "@/components/motion/ConfettiBurst";
+import DeskParallax from "@/components/motion/DeskParallax";
+import DownloadToPrinter from "@/components/motion/DownloadToPrinter";
+import { popIn, selectPulse } from "@/components/motion/hooks";
+import { CREDITS } from "@/lib/kiwiz-config";
 
-// Public preset shape from /api/presets (prompt templates stay server-side).
-// The catalog includes built-in presets plus any created in the admin CMS.
 interface PublicPresetOption {
   key: string;
   label: string;
@@ -28,7 +52,6 @@ interface PublicPreset {
   tags: string[];
 }
 
-// Newsletter lists mirrored from lib/kiwiz-config (kept inline-safe for the client)
 const NEWSLETTER_LISTS = [
   { id: "weekly_printable_club", title: "Weekly Printable Club", description: "New free worksheets every week" },
   { id: "alphabet_numbers", title: "Alphabet & Numbers Practice", description: "Letter and number worksheets by age" },
@@ -48,6 +71,7 @@ interface GenerationResult {
   remaining: number;
   limit: number;
   fallback: boolean;
+  cached?: boolean;
 }
 
 function downloadPdf(base64: string, filename: string) {
@@ -75,19 +99,37 @@ export default function PresetStudio() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
-
-  // email gate state
   const [gateStep, setGateStep] = useState<GateStep>("closed");
   const [email, setEmail] = useState("");
   const [pickedLists, setPickedLists] = useState<string[]>(["weekly_printable_club"]);
+  const [celebrate, setCelebrate] = useState(false);
   const initialised = useRef(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [showPrintAnim, setShowPrintAnim] = useState(false);
+  const [credits, setCredits] = useState<{ remaining: number; limit: number } | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [printTip, setPrintTip] = useState(false);
+
+  const refreshCredits = useCallback(() => {
+    fetch("/api/credits")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.remaining === "number" && typeof d.limit === "number") {
+          setCredits({ remaining: d.remaining, limit: d.limit });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    refreshCredits();
+  }, [refreshCredits]);
 
   const preset = useMemo(
     () => presets.find((p) => p.id === presetId) ?? presets[0],
     [presets, presetId]
   );
 
-  // ---- load the live preset catalog (built-ins + CMS-created) ----
   useEffect(() => {
     let cancelled = false;
     fetch("/api/presets")
@@ -103,7 +145,6 @@ export default function PresetStudio() {
     };
   }, []);
 
-  // ---- URL pre-fill (PRD: never re-ask what the bridge already collected) ----
   useEffect(() => {
     if (initialised.current || presets.length === 0) return;
     initialised.current = true;
@@ -149,11 +190,18 @@ export default function PresetStudio() {
     return parts.join(" – ");
   }, [preset, optionValue]);
 
-  // ---- generate ----
   const handleGenerate = async () => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setGenError("You’re offline. Reconnect and try again.");
+      toast.error("No internet connection.");
+      return;
+    }
     setIsGenerating(true);
     setLimitMessage(null);
+    setGenError(null);
+    setPrintTip(false);
     track("generate_clicked", { preset: preset.id, options: values });
+    track("generation_started", { preset: preset.id });
 
     try {
       const funnel = getFunnel();
@@ -166,7 +214,9 @@ export default function PresetStudio() {
 
       if (response.status === 403) {
         setLimitMessage(data.message ?? "Daily limit reached.");
+        setCredits({ remaining: 0, limit: data.limit ?? CREDITS.anonymousPerDay });
         track("generation_limit_reached", { preset: preset.id, loggedIn: data.loggedIn });
+        track("credits_used", { remaining: 0, limit: data.limit });
         return;
       }
       if (response.status === 422) {
@@ -177,9 +227,29 @@ export default function PresetStudio() {
       if (!response.ok || !data.success) throw new Error(data.error ?? "generation failed");
 
       setResult(data);
-      track("generation_succeeded", { preset: preset.id, fallback: data.fallback });
+      setCredits({ remaining: data.remaining, limit: data.limit });
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 1400);
+      track("generation_succeeded", {
+        preset: preset.id,
+        fallback: data.fallback,
+        cached: !!data.cached,
+      });
+      track("credits_used", { remaining: data.remaining, limit: data.limit, cached: !!data.cached });
+      track("preview_shown", { preset: preset.id });
+      if (data.cached) {
+        toast.success("Instant! Same worksheet from our library — no wait.");
+      }
+      if (data.fallback) {
+        setGenError(null);
+      }
+      setTimeout(() => {
+        popIn(previewRef.current);
+        previewRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
     } catch (err) {
       console.error(err);
+      setGenError("We couldn’t create that worksheet. Try again in a moment.");
       toast.error("Couldn't create your worksheet. Please try again.");
       track("generation_failed", { preset: preset.id });
     } finally {
@@ -187,10 +257,8 @@ export default function PresetStudio() {
     }
   };
 
-  // ---- email gate ----
   const openGate = () => {
     track("email_gate_shown", { preset: preset.id });
-    // returning visitor who already passed the gate: go straight to delivery
     const savedEmail = localStorage.getItem(GATE_EMAIL_KEY);
     if (savedEmail) {
       setEmail(savedEmail);
@@ -214,7 +282,11 @@ export default function PresetStudio() {
         body: JSON.stringify({
           email,
           preset: preset.id,
-          topic: optionValue("topic") || optionValue("subject") || optionValue("letter") || optionValue("number"),
+          topic:
+            optionValue("topic") ||
+            optionValue("subject") ||
+            optionValue("letter") ||
+            optionValue("number"),
           age: optionValue("age"),
           style: optionValue("style"),
           bridge: funnel.bridgeId,
@@ -233,7 +305,9 @@ export default function PresetStudio() {
   };
 
   const toggleList = (id: string) => {
-    setPickedLists((prev) => (prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]));
+    setPickedLists((prev) =>
+      prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
+    );
   };
 
   const subscribeAndUnlock = async () => {
@@ -274,7 +348,6 @@ export default function PresetStudio() {
       const data = await res.json();
 
       if (res.status === 403) {
-        // gate not actually passed on the server (e.g. cleared DB) → show gate
         localStorage.removeItem(GATE_EMAIL_KEY);
         setGateStep(skippedGate ? "email" : "lists");
         if (!skippedGate) toast.error(data.message ?? "Join a newsletter to unlock.");
@@ -284,6 +357,8 @@ export default function PresetStudio() {
 
       downloadPdf(data.pdfBase64, data.filename);
       track("pdf_downloaded", { preset: preset.id, emailed: data.emailed });
+      if (data.emailed) track("email_sent", { preset: preset.id });
+      setPrintTip(true);
 
       try {
         sessionStorage.setItem(
@@ -298,94 +373,186 @@ export default function PresetStudio() {
           })
         );
       } catch {
-        // PDF too large for sessionStorage — thank-you page will degrade gracefully
         try {
           sessionStorage.setItem(
             "kiwiz_last_worksheet",
-            JSON.stringify({ title: worksheetTitle, preset: preset.id, options: result.options, filename: data.filename, emailed: data.emailed })
+            JSON.stringify({
+              title: worksheetTitle,
+              preset: preset.id,
+              options: result.options,
+              filename: data.filename,
+              emailed: data.emailed,
+            })
           );
         } catch {}
       }
 
+      // Celebrate unlock: arrow → printer scene, then thank-you
+      setShowPrintAnim(true);
+      setGateStep("delivering");
+      // Dialog stays open briefly with printer animation; navigate after
+      await new Promise((r) => setTimeout(r, 2100));
       setGateStep("closed");
+      setShowPrintAnim(false);
       router.push("/thank-you");
     } catch (err) {
       console.error(err);
       setGateStep("closed");
+      setShowPrintAnim(false);
       toast.error("Couldn't deliver your PDF. Please try again.");
     }
   };
 
-  // ============================ UI ============================
   if (catalogError) {
     return (
-      <Card className="p-8 text-center bg-white/90 border-orange-200 rounded-2xl">
-        <p className="text-gray-700 font-semibold">Couldn't load the worksheet templates.</p>
-        <Button onClick={() => location.reload()} className="mt-4 rounded-full bg-orange-500 text-white">
+      <div className="paper-panel p-8 text-center">
+        <p className="font-display text-lg font-bold text-[var(--ink)]">
+          Couldn&apos;t load worksheet templates.
+        </p>
+        <Button onClick={() => location.reload()} className="mt-4" variant="secondary">
           Try again
         </Button>
-      </Card>
+      </div>
     );
   }
+
   if (!preset) {
     return (
       <div className="py-16 text-center">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-[var(--kiwi)]" />
+        <p className="mt-3 text-sm text-[var(--ink-soft)]">Loading templates…</p>
       </div>
     );
   }
 
+  const kind = getPrintableKind(preset.id);
+
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-8">
-      {/* preset picker */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {presets.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => {
-              setPresetId(p.id);
-              setResult(null);
-              track("preset_selected", { preset: p.id });
-            }}
-            className={`rounded-2xl border-2 p-4 text-center transition-all ${
-              p.id === preset.id
-                ? "border-orange-500 bg-orange-50 shadow-lg scale-105"
-                : "border-orange-200 bg-white hover:border-orange-400"
-            }`}
-          >
-            <div className="text-3xl">{p.emoji}</div>
-            <div className="mt-1 font-bold text-sm text-orange-800">{p.title}</div>
-          </button>
-        ))}
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      {/* Always-visible free credits */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 text-sm font-display font-bold text-[var(--ink)] shadow-sm ring-1 ring-black/5">
+          <Zap className="h-4 w-4 text-[var(--sun)]" />
+          {credits
+            ? `${credits.remaining} of ${credits.limit} free left today`
+            : `Up to ${CREDITS.anonymousPerDay} free / day`}
+        </div>
+        <p className="text-[11px] text-[var(--ink-soft)]">
+          Same options again = free library (no credit)
+        </p>
       </div>
 
-      {/* options form */}
-      <Card className="p-6 bg-white/90 border-orange-200 rounded-2xl shadow-lg space-y-5">
-        <p className="text-sm text-gray-600">{preset.description}</p>
-        <div className="grid sm:grid-cols-2 gap-4">
+      {/* Visual catalog — show what each printable looks like */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {presets.map((p) => {
+          const active = p.id === preset.id;
+          const meta = getPrintableKind(p.id);
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={(e) => {
+                setPresetId(p.id);
+                setResult(null);
+                selectPulse(e.currentTarget);
+                track("preset_selected", { preset: p.id });
+              }}
+              className={`group relative overflow-hidden rounded-[1.35rem] p-2.5 text-left shadow-[0_10px_28px_-16px_rgba(30,41,53,0.3)] ring-1 transition-all will-change-transform active:scale-[0.97] ${
+                meta?.tint ?? "bg-white"
+              } ${
+                active
+                  ? "ring-2 ring-[var(--ink)] -translate-y-1 scale-[1.02]"
+                  : "ring-black/5 hover:-translate-y-0.5 opacity-95 hover:opacity-100"
+              }`}
+            >
+              <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+                <SampleImage
+                  src={meta?.preview ?? "/samples/dino-coloring.png"}
+                  fallback={meta?.fallbackPreview}
+                  alt={meta?.sample ?? p.title}
+                  className="absolute inset-0 transition duration-200 group-hover:scale-[1.03]"
+                />
+              </div>
+              <div className="mt-2 px-0.5">
+                <div className={`font-display text-[13px] font-bold leading-tight ${meta?.accent ?? "text-[var(--ink)]"}`}>
+                  {meta?.shortTitle ?? p.title}
+                </div>
+                <div className="mt-0.5 line-clamp-1 text-[10px] text-[var(--ink-soft)] sm:text-[11px]">
+                  {meta?.blurb ?? p.description}
+                </div>
+              </div>
+              {active && (
+                <span className="absolute right-2 top-2 rounded-full bg-[var(--ink)] px-2 py-0.5 font-display text-[10px] font-bold text-white">
+                  Selected
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* options */}
+      <section className="relative overflow-hidden rounded-[1.75rem] bg-white shadow-[0_16px_40px_-20px_rgba(30,41,53,0.28)] ring-1 ring-black/5">
+        <GenerateAura active={isGenerating} />
+        {celebrate && <ConfettiBurst fire />}
+        {kind && (
+          <div className={`${kind.tint} flex items-center gap-4 border-b border-black/5 px-5 py-4 sm:px-7`}>
+            <div className="hidden h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 sm:block relative">
+              <SampleImage
+                src={kind.preview}
+                fallback={kind.fallbackPreview}
+                alt=""
+                className="absolute inset-0"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${kind.chip}`}>
+                {kind.ages} · A4 PDF
+              </span>
+              <h2 className={`mt-1 font-display text-xl font-bold sm:text-2xl ${kind.accent}`}>
+                {kind.title}
+              </h2>
+              <p className="mt-0.5 text-sm text-[var(--ink-soft)]">{kind.detail}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6 p-5 sm:p-7">
+        {!kind && (
+          <div>
+            <h2 className="font-display text-xl font-bold text-[var(--ink)]">
+              {preset.emoji} {preset.title}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">{preset.description}</p>
+          </div>
+        )}
+
+        <div className="grid gap-5 sm:grid-cols-2">
           {preset.options.map((opt) => {
             const current = optionValue(opt.key);
             const isCustom = opt.allowCustom && !!customText[opt.key];
             return (
-              <div key={opt.key} className="space-y-1.5">
-                <label className="text-sm font-semibold text-orange-800">{opt.label}</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {opt.values.map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => {
-                        setCustomText((prev) => ({ ...prev, [opt.key]: "" }));
-                        setOption(opt.key, v);
-                      }}
-                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${
-                        current === v && !isCustom
-                          ? "bg-orange-500 text-white border-orange-600"
-                          : "bg-white text-gray-700 border-orange-200 hover:border-orange-400"
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
+              <div key={opt.key} className="space-y-2">
+                <label className="font-display text-sm font-bold text-[var(--ink)]">
+                  {opt.label}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {opt.values.map((v) => {
+                    const on = current === v && !isCustom;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => {
+                          setCustomText((prev) => ({ ...prev, [opt.key]: "" }));
+                          setOption(opt.key, v);
+                        }}
+                        className={`chip ${on ? "chip-active" : "hover:border-[var(--kiwi)]"}`}
+                      >
+                        {v}
+                      </button>
+                    );
+                  })}
                 </div>
                 {opt.allowCustom && (
                   <Input
@@ -394,8 +561,8 @@ export default function PresetStudio() {
                       setCustomText((prev) => ({ ...prev, [opt.key]: e.target.value }));
                       setOption(opt.key, e.target.value);
                     }}
-                    placeholder="…or type your own"
-                    className="mt-1 border-orange-200"
+                    placeholder="…or type your own topic"
+                    className="mt-1 h-11 rounded-full border-2 border-[var(--border)] bg-[var(--paper)] px-4"
                     maxLength={60}
                   />
                 )}
@@ -407,77 +574,157 @@ export default function PresetStudio() {
         <Button
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="w-full rounded-full bg-orange-500 py-6 text-lg font-bold text-white hover:bg-orange-600 shadow-lg hover:scale-[1.02] transition-all"
+          size="xl"
+          className="w-full"
+          variant="default"
         >
           {isGenerating ? (
             <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating your worksheet…
+              <Loader2 className="h-5 w-5 animate-spin" /> Drawing your worksheet…
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-5 w-5" /> Generate my worksheet
+              <Sparkles className="h-5 w-5" /> Generate my worksheet
             </>
           )}
         </Button>
 
-        {limitMessage && (
-          <div className="rounded-xl bg-yellow-100 border border-yellow-300 p-4 text-center text-sm text-gray-800">
-            {limitMessage}{" "}
-            <a href="/api/auth/login" className="font-bold text-orange-600 underline">
-              Log in
-            </a>
+        {isGenerating && (
+          <div className="overflow-hidden rounded-2xl border-2 border-dashed border-[var(--kiwi)]/40 bg-[var(--kiwi)]/5 p-4">
+            <div className="mx-auto aspect-[3/4] max-w-[200px] animate-pulse rounded-xl bg-white/80 ring-1 ring-black/5" />
+            <p className="mt-3 text-center text-sm text-[var(--ink-soft)]">
+              Sketching clean lines for print… usually under 20 seconds.
+            </p>
           </div>
         )}
-      </Card>
 
-      {/* preview: visible but watermarked; download locked until gate passed */}
-      {result && (
-        <Card className="p-6 bg-white border-orange-200 rounded-2xl shadow-xl text-center space-y-4">
-          <h3 className="text-xl font-extrabold text-orange-700">Your worksheet is ready! 🎉</h3>
-          <div className="relative mx-auto max-w-md select-none">
-            <img
-              src={result.imageUrl}
-              alt={worksheetTitle}
-              className="w-full rounded-lg border-2 border-orange-300 shadow-md pointer-events-none"
-              draggable={false}
-            />
-            {/* watermark overlay */}
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-lg">
-              <div className="rotate-[-30deg] text-4xl font-black text-orange-500/25 whitespace-nowrap">
-                KIWIZ PREVIEW · KIWIZ PREVIEW
-              </div>
+        {genError && (
+          <div className="flex items-start gap-3 rounded-2xl border-2 border-[var(--coral)]/40 bg-[color-mix(in_oklab,var(--coral)_10%,white)] p-4 text-sm text-[var(--ink)]">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--coral)]" />
+            <div className="flex-1">
+              <p className="font-display font-bold">Something went wrong</p>
+              <p className="mt-1 text-[var(--ink-soft)]">{genError}</p>
+              <Button onClick={handleGenerate} size="sm" className="mt-3" variant="secondary">
+                Try again
+              </Button>
             </div>
           </div>
+        )}
+
+        {limitMessage && (
+          <div className="rounded-2xl border-2 border-[var(--sun)] bg-[color-mix(in_oklab,var(--sun)_18%,white)] p-4 text-center text-sm text-[var(--ink)]">
+            {limitMessage} Come back tomorrow for more free worksheets.{" "}
+            <Link href="/dashboard" className="font-bold underline">
+              See my free day
+            </Link>
+          </div>
+        )}
+        </div>
+      </section>
+
+      {/* preview on soft desk with parallax */}
+      {result && (
+        <section
+          ref={previewRef}
+          className="relative space-y-5 rounded-[1.75rem] bg-white p-5 text-center shadow-[0_16px_40px_-20px_rgba(30,41,53,0.28)] ring-1 ring-black/5 sm:p-7"
+        >
+          {celebrate && <ConfettiBurst fire />}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[var(--kiwi)]/12 px-4 py-1.5 font-display text-sm font-bold text-[var(--kiwi-deep)]">
+              <CheckCircle2 className="h-4 w-4" />{" "}
+              {result.cached ? "Ready instantly!" : "Your worksheet is ready!"}
+            </div>
+            {result.cached && (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--sun)]/25 px-3 py-1.5 font-display text-xs font-bold text-[var(--ink)]">
+                <Library className="h-3.5 w-3.5" /> From saved library
+              </div>
+            )}
+          </div>
+          <h3 className="font-display text-2xl font-bold text-[var(--ink)]">{worksheetTitle}</h3>
+
+          <DeskParallax>
+            <div className="relative">
+              <img
+                src={result.imageUrl}
+                alt={worksheetTitle}
+                className="w-full pointer-events-none"
+                draggable={false}
+              />
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-1/2 top-1/2 w-[140%] -translate-x-1/2 -translate-y-1/2 -rotate-[28deg] text-center font-display text-2xl font-black tracking-widest text-[var(--kiwi)]/15 sm:text-3xl">
+                  KIWIZ PREVIEW
+                </div>
+              </div>
+            </div>
+          </DeskParallax>
+
           {result.fallback && (
-            <p className="text-xs text-gray-500">
-              We served one of our ready-made pages this time — hit generate to try again.
-            </p>
+            <div className="rounded-2xl bg-[var(--muted)] p-3 text-xs text-[var(--ink-soft)]">
+              We served a ready-made page this time — hit generate to try a fresh AI drawing.
+            </div>
           )}
-          <Button
-            onClick={openGate}
-            className="rounded-full bg-blue-600 px-8 py-6 text-lg font-bold text-white hover:bg-blue-700 shadow-lg hover:scale-105 transition-all"
-          >
-            <Lock className="mr-2 h-5 w-5" /> Enter email to download the PDF
+
+          <Button onClick={openGate} size="xl" variant="sky" className="w-full sm:w-auto sm:min-w-[280px]">
+            <Lock className="h-5 w-5" /> Enter email to download PDF
           </Button>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--ink-soft)]">
             {result.remaining} of {result.limit} free worksheets left today
+            {result.cached ? " · this one was free (library)" : ""}
           </p>
-        </Card>
+
+          {printTip && (
+            <div className="flex items-start gap-3 rounded-2xl bg-[var(--kiwi)]/10 p-4 text-left text-sm text-[var(--ink)]">
+              <Printer className="mt-0.5 h-5 w-5 shrink-0 text-[var(--kiwi-deep)]" />
+              <div>
+                <p className="font-display font-bold">Print tip</p>
+                <p className="mt-1 text-[var(--ink-soft)]">
+                  Print at <strong className="text-[var(--ink)]">100% / actual size</strong>, portrait,
+                  on A4 or letter. Avoid “fit to page” so tracing lines stay the right size.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
       )}
 
-      {/* ---- email gate dialog ---- */}
-      <Dialog open={gateStep !== "closed"} onOpenChange={(open) => !open && gateStep !== "delivering" && setGateStep("closed")}>
-        <DialogContent className="max-w-md rounded-2xl border-2 border-orange-300 bg-white">
-          {gateStep === "email" && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-extrabold text-orange-700 flex items-center gap-2">
-                  <Mail className="h-6 w-6" /> Almost yours!
+      {/* email gate modal */}
+      <Dialog
+        open={gateStep !== "closed"}
+        onOpenChange={(open) => !open && gateStep !== "delivering" && setGateStep("closed")}
+      >
+        <DialogContent className="max-w-md overflow-hidden rounded-[1.75rem] border-2 border-[color-mix(in_oklab,var(--ink)_12%,transparent)] bg-[var(--paper)] p-0 shadow-[0_16px_50px_-12px_rgb(15_159_110/0.35)] sm:max-w-md">
+          <div className="bg-gradient-to-br from-[var(--kiwi)]/15 via-[var(--sun)]/10 to-transparent px-6 pt-6 pb-2">
+            {gateStep === "email" && (
+              <DialogHeader className="text-left space-y-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--coral)] text-white shadow-[0_3px_0_0_color-mix(in_oklab,var(--ink)_14%,transparent)]">
+                  <Mail className="h-6 w-6" />
+                </div>
+                <DialogTitle className="font-display text-2xl font-bold text-[var(--ink)]">
+                  Almost yours!
                 </DialogTitle>
-                <DialogDescription>
-                  Enter your email to download <strong>{worksheetTitle}</strong> as a print-ready PDF. We'll also send it to your inbox.
+                <DialogDescription className="text-[var(--ink-soft)] text-sm leading-relaxed">
+                  Enter your email to download <strong className="text-[var(--ink)]">{worksheetTitle}</strong>{" "}
+                  as a print-ready PDF. We&apos;ll also send a copy to your inbox.
                 </DialogDescription>
               </DialogHeader>
+            )}
+            {gateStep === "lists" && (
+              <DialogHeader className="text-left space-y-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--sun)] text-[var(--ink)] shadow-[0_3px_0_0_color-mix(in_oklab,var(--ink)_14%,transparent)]">
+                  <Gift className="h-6 w-6" />
+                </div>
+                <DialogTitle className="font-display text-2xl font-bold text-[var(--ink)]">
+                  One last fun step
+                </DialogTitle>
+                <DialogDescription className="text-[var(--ink-soft)] text-sm">
+                  Pick at least one free list — then your download unlocks instantly.
+                </DialogDescription>
+              </DialogHeader>
+            )}
+          </div>
+
+          <div className="space-y-4 px-6 pb-6 pt-3">
+            {gateStep === "email" && (
               <form onSubmit={submitEmail} className="space-y-3">
                 <Input
                   type="email"
@@ -485,60 +732,89 @@ export default function PresetStudio() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="border-orange-200"
+                  className="h-12 rounded-full border-2 border-[var(--border)] bg-white px-4 text-base"
+                  autoFocus
                 />
-                <Button type="submit" className="w-full rounded-full bg-orange-500 font-bold text-white hover:bg-orange-600">
+                <Button type="submit" size="lg" className="w-full">
                   Get my printable
                 </Button>
-                <p className="text-[11px] text-gray-500 text-center">
-                  By continuing you agree to receive your free printable by email and accept our Terms &amp; Privacy Policy.
+                <p className="text-center text-[11px] leading-relaxed text-[var(--ink-soft)]">
+                  By continuing you agree to receive your free printable by email and accept our{" "}
+                  <Link href="/terms" className="font-semibold underline" target="_blank">
+                    Terms
+                  </Link>{" "}
+                  &amp;{" "}
+                  <Link href="/privacy" className="font-semibold underline" target="_blank">
+                    Privacy Policy
+                  </Link>
+                  .
                 </p>
               </form>
-            </>
-          )}
+            )}
 
-          {gateStep === "lists" && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-extrabold text-orange-700">One last step 💌</DialogTitle>
-                <DialogDescription>Pick at least one to join — then your download unlocks instantly.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-2">
-                {NEWSLETTER_LISTS.map((list) => {
-                  const checked = pickedLists.includes(list.id);
-                  return (
-                    <button
-                      key={list.id}
-                      onClick={() => toggleList(list.id)}
-                      className={`w-full rounded-xl border-2 p-3 text-left transition-all flex items-start gap-3 ${
-                        checked ? "border-orange-500 bg-orange-50" : "border-gray-200 bg-white hover:border-orange-300"
-                      }`}
-                    >
-                      <CheckCircle2 className={`h-5 w-5 mt-0.5 shrink-0 ${checked ? "text-orange-500" : "text-gray-300"}`} />
-                      <span>
-                        <span className="block font-bold text-sm text-gray-900">{list.title}</span>
-                        <span className="block text-xs text-gray-500">{list.description}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+            {gateStep === "lists" && (
+              <>
+                <div className="space-y-2 max-h-[46vh] overflow-y-auto pr-1">
+                  {NEWSLETTER_LISTS.map((list) => {
+                    const checked = pickedLists.includes(list.id);
+                    return (
+                      <button
+                        key={list.id}
+                        type="button"
+                        onClick={() => toggleList(list.id)}
+                        className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all ${
+                          checked
+                            ? "border-[var(--kiwi)] bg-[var(--kiwi)]/10 shadow-[0_3px_0_0_color-mix(in_oklab,var(--ink)_10%,transparent)]"
+                            : "border-[var(--border)] bg-white hover:border-[var(--kiwi)]/50"
+                        }`}
+                      >
+                        <CheckCircle2
+                          className={`mt-0.5 h-5 w-5 shrink-0 ${
+                            checked ? "text-[var(--kiwi)]" : "text-[var(--border)]"
+                          }`}
+                        />
+                        <span>
+                          <span className="block font-display text-sm font-bold text-[var(--ink)]">
+                            {list.title}
+                          </span>
+                          <span className="block text-xs text-[var(--ink-soft)]">
+                            {list.description}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button
+                  onClick={subscribeAndUnlock}
+                  disabled={pickedLists.length === 0}
+                  size="lg"
+                  variant="secondary"
+                  className="w-full"
+                >
+                  <Download className="h-5 w-5" /> Subscribe &amp; Download
+                </Button>
+              </>
+            )}
+
+            {gateStep === "delivering" && (
+              <div className="space-y-2 py-6 text-center">
+                {showPrintAnim ? (
+                  <DownloadToPrinter play />
+                ) : (
+                  <>
+                    <Loader2 className="mx-auto h-10 w-10 animate-spin text-[var(--kiwi)]" />
+                    <p className="font-display font-semibold text-[var(--ink)]">
+                      Preparing your PDF…
+                    </p>
+                    <p className="text-sm text-[var(--ink-soft)]">
+                      Sending a copy to your inbox right now.
+                    </p>
+                  </>
+                )}
               </div>
-              <Button
-                onClick={subscribeAndUnlock}
-                disabled={pickedLists.length === 0}
-                className="w-full rounded-full bg-green-500 py-5 font-bold text-white hover:bg-green-600"
-              >
-                <Download className="mr-2 h-5 w-5" /> Subscribe &amp; Download
-              </Button>
-            </>
-          )}
-
-          {gateStep === "delivering" && (
-            <div className="py-10 text-center space-y-3">
-              <Loader2 className="mx-auto h-10 w-10 animate-spin text-orange-500" />
-              <p className="font-semibold text-gray-700">Preparing your PDF and sending it to your inbox…</p>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

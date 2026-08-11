@@ -39,9 +39,5 @@ export default async function NewsletterAdminPage() {
     );
   }
 
-  if (result.response.status === 401) {
-    redirect("/api/auth/login");
-  }
-
-  redirect("/");
+  redirect("/admin-login");
 }

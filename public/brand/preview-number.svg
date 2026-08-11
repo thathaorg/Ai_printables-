@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 340" fill="none">
+  <rect width="280" height="340" rx="28" fill="#E8F8EE"/>
+  <rect x="14" y="14" width="252" height="312" rx="22" fill="#FFFFFF" stroke="#A8DDB8" stroke-width="3"/>
+  <text x="28" y="42" fill="#4A7A58" font-family="Nunito,sans-serif" font-size="11" font-weight="700">Name: ______  Date: ____</text>
+  <path d="M28 54h224" stroke="#D5EFDE" stroke-width="2"/>
+  <!-- big number 3 -->
+  <path d="M155 78c28 0 48 14 48 38 0 16-10 28-26 34 18 6 30 20 30 40 0 28-26 46-58 46-28 0-50-12-56-34" stroke="#3DB87A" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <!-- stars row -->
+  <g transform="translate(40 220)">
+    <path d="M20 4l5 12h13l-10 8 4 12-12-8-12 8 4-12-10-8h13z" fill="none" stroke="#3DB87A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M68 4l5 12h13l-10 8 4 12-12-8-12 8 4-12-10-8h13z" fill="none" stroke="#3DB87A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M116 4l5 12h13l-10 8 4 12-12-8-12 8 4-12-10-8h13z" fill="none" stroke="#3DB87A" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+  <text x="40" y="290" fill="#A8DDB8" font-family="Fredoka,sans-serif" font-size="26" font-weight="700" letter-spacing="12">3 3 3 3</text>
+  <path d="M36 298h208" stroke="#D5EFDE" stroke-width="1.5" stroke-dasharray="4 6"/>
+  <circle cx="230" cy="100" r="18" fill="#B8EFC9"/>
+  <text x="223" y="107" fill="#2A8F58" font-family="Fredoka,sans-serif" font-size="18" font-weight="700">3</text>
+</svg>

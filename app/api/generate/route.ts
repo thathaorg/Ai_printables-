@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { buildPrompt } from "@/lib/presets";
 import { getPresetById } from "@/lib/preset-store";
 import { generateImageWithOpenRouter } from "@/lib/image-generation";
 import { isTopicSafe, isImageKidSafe } from "@/lib/safety";
-import { consumeCredit } from "@/lib/credits";
+import { consumeCredit, remainingCredits } from "@/lib/credits";
 import { ANON_COOKIE } from "@/lib/kiwiz-config";
+import { worksheetPromptHash } from "@/lib/prompt-hash";
+import { getCachedWorksheet, putCachedWorksheet } from "@/lib/worksheet-cache";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -20,9 +21,9 @@ const FALLBACK_IMAGE = "/fallback-worksheet.svg";
 
 /**
  * POST /api/generate
- * The single preset pipeline (PRD): options → prompt builder → AI image →
- * safety filter → preview. Every preset flows through here.
- * Body: { preset: string, options: Record<string,string>, bridge?, utm? }
+ * Smart path: identical options → full-quality cache ($0, no safety re-pay).
+ * Miss → full AI quality once → store → next time free.
+ * Credits only apply to cold (AI) generations, not cache hits.
  */
 export async function POST(req: Request) {
   try {
@@ -34,19 +35,17 @@ export async function POST(req: Request) {
 
     const { prompt, options } = buildPrompt(preset, body?.options ?? {});
 
-    // Pre-generation safety on custom text values
     for (const value of Object.values(options)) {
       if (!isTopicSafe(value)) {
         return Response.json(
-          { error: "safety_blocked", message: "That topic isn't suitable for a kids' worksheet. Try another one!" },
+          {
+            error: "safety_blocked",
+            message: "That topic isn't suitable for a kids' worksheet. Try another one!",
+          },
           { status: 422 }
         );
       }
     }
-
-    // ---- credits: 3/day anonymous, 6/day logged in (configurable) ----
-    const { getUser } = getKindeServerSession();
-    const user = await getUser().catch(() => null);
 
     const cookieStore = await cookies();
     let anonId = cookieStore.get(ANON_COOKIE)?.value;
@@ -56,24 +55,57 @@ export async function POST(req: Request) {
       setAnonCookie = true;
     }
 
-    const creditKey = user ? `user:${user.id}` : `anon:${anonId}`;
-    const credit = await consumeCredit(creditKey, !!user);
+    const creditKey = `anon:${anonId}`;
+    const promptHash = worksheetPromptHash(preset.id, options, preset.promptTemplate);
+
+    // ── 1) Durable full-quality cache (primary money saver) ──
+    const cached = await getCachedWorksheet(promptHash);
+    if (cached) {
+      const credits = await remainingCredits(creditKey, false);
+      const generationId = await persistGeneration({
+        preset: preset.id,
+        options,
+        prompt,
+        promptHash,
+        status: "cache_hit",
+        anonId,
+        bridgeId: body?.bridge ?? null,
+      });
+
+      return withAnonCookie(
+        Response.json({
+          success: true,
+          generationId,
+          imageUrl: cached.dataUrl,
+          preset: preset.id,
+          options,
+          tags: preset.tags,
+          remaining: credits.remaining,
+          limit: credits.limit,
+          fallback: false,
+          cached: true,
+          promptHash,
+        }),
+        setAnonCookie,
+        anonId
+      );
+    }
+
+    // ── 2) Cold path: daily credit + paid AI ──
+    const credit = await consumeCredit(creditKey, false);
     if (!credit.allowed) {
       return Response.json(
         {
           error: "limit_reached",
-          message: user
-            ? `You've used all ${credit.limit} free worksheets for today. Come back tomorrow!`
-            : `You've used all ${credit.limit} free worksheets for today. Log in to get more, or come back tomorrow!`,
+          message: `You've used all ${credit.limit} free worksheets for today. Come back tomorrow!`,
           remaining: 0,
           limit: credit.limit,
-          loggedIn: !!user,
+          loggedIn: false,
         },
         { status: 403 }
       );
     }
 
-    // ---- AI generation with silent retry, then pre-approved fallback ----
     let imageUrl: string | null = null;
     let status = "succeeded";
     for (let attempt = 0; attempt < 2 && !imageUrl; attempt++) {
@@ -89,55 +121,92 @@ export async function POST(req: Request) {
     }
 
     if (!imageUrl) {
-      // PRD: on safety/generation failure serve a pre-approved fallback
       imageUrl = FALLBACK_IMAGE;
       if (status !== "safety_blocked") status = "failed_fallback";
     }
 
-    // ---- persist generation for analytics/recommendations ----
-    let generationId: string | null = null;
-    const prisma = await getPrisma();
-    if (prisma) {
-      try {
-        const gen = await prisma.generation.create({
-          data: {
-            preset: preset.id,
-            options,
-            prompt,
-            imageUrl: imageUrl.startsWith("data:") ? null : imageUrl, // data URLs are too big to store
-            status,
-            anonId: user ? null : anonId,
-            email: user?.email ?? null,
-            bridgeId: body?.bridge ?? null,
-          },
-        });
-        generationId = gen.id;
-      } catch (err) {
-        console.warn("Failed to persist generation:", err);
-      }
+    // Store only real, safe AI images (never fallback) for forever reuse
+    if (status === "succeeded" && imageUrl !== FALLBACK_IMAGE) {
+      await putCachedWorksheet({
+        promptHash,
+        preset: preset.id,
+        options,
+        imageUrl,
+      });
     }
 
-    const res = Response.json({
-      success: true,
-      generationId,
-      imageUrl,
+    const generationId = await persistGeneration({
       preset: preset.id,
       options,
-      tags: preset.tags,
-      remaining: credit.remaining,
-      limit: credit.limit,
-      fallback: imageUrl === FALLBACK_IMAGE,
+      prompt,
+      promptHash,
+      status,
+      anonId,
+      bridgeId: body?.bridge ?? null,
     });
 
-    if (setAnonCookie) {
-      res.headers.append(
-        "Set-Cookie",
-        `${ANON_COOKIE}=${anonId}; Path=/; Max-Age=31536000; SameSite=Lax`
-      );
-    }
-    return res;
+    return withAnonCookie(
+      Response.json({
+        success: true,
+        generationId,
+        imageUrl,
+        preset: preset.id,
+        options,
+        tags: preset.tags,
+        remaining: credit.remaining,
+        limit: credit.limit,
+        fallback: imageUrl === FALLBACK_IMAGE,
+        cached: false,
+        promptHash,
+      }),
+      setAnonCookie,
+      anonId
+    );
   } catch (error) {
     console.error("generate error:", error);
     return Response.json({ error: "generation_failed" }, { status: 500 });
   }
+}
+
+async function persistGeneration(data: {
+  preset: string;
+  options: Record<string, string>;
+  prompt: string;
+  promptHash: string;
+  status: string;
+  anonId: string;
+  bridgeId: string | null;
+}): Promise<string | null> {
+  const prisma = await getPrisma();
+  if (!prisma) return null;
+  try {
+    const gen = await prisma.generation.create({
+      data: {
+        preset: data.preset,
+        options: data.options,
+        prompt: data.prompt,
+        promptHash: data.promptHash,
+        // Bytes live in WorksheetCache; generation row is audit/funnel only
+        imageUrl: data.status === "cache_hit" ? `cache:${data.promptHash}` : null,
+        status: data.status,
+        anonId: data.anonId,
+        email: null,
+        bridgeId: data.bridgeId,
+      },
+    });
+    return gen.id;
+  } catch (err) {
+    console.warn("Failed to persist generation:", err);
+    return null;
+  }
+}
+
+function withAnonCookie(res: Response, set: boolean, anonId: string): Response {
+  if (set) {
+    res.headers.append(
+      "Set-Cookie",
+      `${ANON_COOKIE}=${anonId}; Path=/; Max-Age=31536000; SameSite=Lax`
+    );
+  }
+  return res;
 }

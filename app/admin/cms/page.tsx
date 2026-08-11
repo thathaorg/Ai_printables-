@@ -33,6 +33,8 @@ const TEMPLATE_CHOICES = [
   { value: "number_picker", label: "Number picker — visitor picks 0–9" },
   { value: "theme_picker", label: "Theme picker — visitor picks one of your options" },
   { value: "age_gate", label: "Age gate — visitor picks an age" },
+  { value: "mini_quiz", label: "Mini quiz — multi-step questions (use quizSteps)" },
+  { value: "teacher", label: "Teacher — pick worksheet type for class" },
 ];
 
 const slugify = (s: string) =>
@@ -189,7 +191,10 @@ function BridgesTab() {
     toast.success("Link copied!");
   };
 
-  const needsOptions = editing?.template === "theme_picker" || editing?.template === "age_gate";
+  const needsOptions =
+    editing?.template === "theme_picker" ||
+    editing?.template === "age_gate" ||
+    editing?.template === "teacher";
 
   return (
     <div className="space-y-6">

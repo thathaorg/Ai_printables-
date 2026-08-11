@@ -1,14 +1,10 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { NEWSLETTER_LISTS } from "@/lib/kiwiz-config";
 import { syncContactToEsp } from "@/lib/esp";
 
 export const dynamic = "force-dynamic";
 
 async function getPrisma() {
-  if (!process.env.DATABASE_URL) {
-    console.warn("DATABASE_URL is not configured. Newsletter subscribe API unavailable.");
-    return null;
-  }
+  if (!process.env.DATABASE_URL) return null;
   const { prisma } = await import("@/lib/prisma");
   return prisma;
 }
@@ -18,8 +14,6 @@ const VALID_LIST_IDS = new Set(NEWSLETTER_LISTS.map((l) => l.id));
 /**
  * POST /api/newsletter/subscribe
  * Body: { email, lists?: string[] }
- * PRD: the download unlock requires joining at least one list, so when
- * `lists` is provided it must contain at least one valid list id.
  */
 export async function POST(req: Request) {
   try {
@@ -48,33 +42,13 @@ export async function POST(req: Request) {
       );
     }
 
-    let userId: string | undefined;
-    try {
-      const { getUser } = getKindeServerSession();
-      const user = await getUser();
-      if (user) {
-        const dbUser =
-          (await prisma.user.findUnique({ where: { kindeId: user.id } })) ??
-          (user.email ? await prisma.user.findUnique({ where: { email: user.email } }) : null);
-        if (dbUser) {
-          userId = dbUser.id;
-          await prisma.user.update({
-            where: { id: dbUser.id },
-            data: { newsletterSubscribed: true },
-          });
-        }
-      }
-    } catch (authError) {
-      console.warn("Newsletter subscription: unable to resolve Kinde user", authError);
-    }
-
     const existing = await prisma.newsletterSubscriber.findUnique({ where: { email } });
     const mergedLists = Array.from(new Set([...(existing?.lists ?? []), ...(lists ?? [])]));
 
     await prisma.newsletterSubscriber.upsert({
       where: { email },
-      update: { userId, lists: mergedLists },
-      create: { email, userId, lists: mergedLists },
+      update: { lists: mergedLists },
+      create: { email, lists: mergedLists },
     });
 
     await syncContactToEsp({

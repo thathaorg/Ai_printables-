@@ -11,7 +11,15 @@ export type BridgeTemplate =
   | "letter_picker" // pick A–Z
   | "number_picker" // pick 0–9
   | "theme_picker" // pick a style/theme
-  | "age_gate"; // pick an age
+  | "age_gate" // pick an age
+  | "mini_quiz" // multi-step questions
+  | "teacher"; // classroom worksheet type picker
+
+export interface BridgeQuizStep {
+  question: string;
+  options: string[];
+  payloadKey: string;
+}
 
 export interface BridgeConfig {
   bridgeId: string;
@@ -19,13 +27,15 @@ export interface BridgeConfig {
   headline: string;
   subline: string;
   cta: string;
-  /** for theme_picker/age_gate: the choices shown; value goes into payloadKey */
+  /** for theme_picker/age_gate/teacher: the choices shown */
   options?: string[];
   /** which /create param the picked option fills */
   payloadKey?: string;
   /** always merged into the /create URL */
   payload: Record<string, string>;
   emoji: string;
+  /** multi-step quiz (mini_quiz template) */
+  quizSteps?: BridgeQuizStep[];
 }
 
 export const BRIDGES: BridgeConfig[] = [
@@ -79,6 +89,43 @@ export const BRIDGES: BridgeConfig[] = [
     cta: "Get my counting worksheet",
     payload: { preset: "counting_worksheet", subject: "Farm animals" },
     emoji: "🐄",
+  },
+  {
+    bridgeId: "dino_quiz_01",
+    template: "mini_quiz",
+    headline: "Which dino printable is right?",
+    subline: "Two quick picks — then a free coloring page made for your child",
+    cta: "Make my free printable",
+    payload: { preset: "coloring_page", topic: "Dinosaurs" },
+    emoji: "🧩",
+    quizSteps: [
+      {
+        question: "What style do they like?",
+        options: ["Cute", "Simple", "Realistic"],
+        payloadKey: "style",
+      },
+      {
+        question: "How old are they?",
+        options: ["2-3", "4-5"],
+        payloadKey: "age",
+      },
+    ],
+  },
+  {
+    bridgeId: "teacher_pack_01",
+    template: "teacher",
+    headline: "Free Classroom Printables for Teachers",
+    subline: "Pick a worksheet type — print a whole set for circle time",
+    cta: "Open classroom studio",
+    options: [
+      "coloring_page",
+      "alphabet_tracing",
+      "number_tracing",
+      "counting_worksheet",
+    ],
+    payloadKey: "preset",
+    payload: { preset: "coloring_page", age: "4-5" },
+    emoji: "🍎",
   },
 ];
 

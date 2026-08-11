@@ -187,8 +187,9 @@ add a "Matching" preset without touching bridge page code or generation code.
 ## 2. How it works technically (architecture)
 
 **Stack:** Next.js 16.3 (App Router, Turbopack) · React 18 · Prisma 6 + Neon Postgres ·
-Kinde (login) · OpenRouter → Gemini 2.5 Flash Image (AI art) · Resend (transactional
-email) · pdf-lib (PDF) · Tailwind + shadcn/ui · Vercel (hosting, git-connected).
+OpenRouter → Gemini 2.5 Flash Image (AI art) · Resend (transactional email) · pdf-lib
+(PDF) · Tailwind + shadcn/ui · Vercel (hosting, git-connected). No end-user auth —
+anonymous daily credits + email gate for download; admin = password cookie.
 
 | Area | File(s) | What it does |
 |---|---|---|
@@ -197,7 +198,7 @@ email) · pdf-lib (PDF) · Tailwind + shadcn/ui · Vercel (hosting, git-connecte
 | Bridge configs | `lib/bridges.ts` + `lib/bridge-store.ts` | 5 built-in bridge pages + same DB layering |
 | Generation API | `app/api/generate/route.ts` | Credits check → prompt build → AI image → safety filter → fallback → persist |
 | Safety | `lib/safety.ts` | Topic blocklist + AI vision check ("safe for ages 2–5?"); retry → `public/fallback-worksheet.svg` |
-| Credits | `lib/credits.ts` + `DailyUsage` | 3/day anon (cookie `kiwiz_anon_id`), 6/day logged in; env-overridable |
+| Credits | `lib/credits.ts` + `DailyUsage` | 3/day anonymous (cookie `kiwiz_anon_id`); env-overridable via `CREDITS_ANON` |
 | Email gate | `app/api/lead/route.ts` | Lead + consent + funnel tags to DB (CRM of record); mirrors to ESP if configured |
 | Newsletters | `app/api/newsletter/subscribe/route.ts` | Named lists; ≥1 enforced server-side |
 | Delivery | `app/api/deliver/route.ts` + `lib/pdf.ts` + `lib/transactional-email.ts` | Verifies gate passed → A4 PDF → Resend email → returns PDF for download |
@@ -207,7 +208,7 @@ email) · pdf-lib (PDF) · Tailwind + shadcn/ui · Vercel (hosting, git-connecte
 | Thank You | `app/thank-you/page.tsx` | Re-download, tag-based recommendations, one-click joins |
 | Tracking | `lib/funnel.ts` + `app/api/analytics/track` + `TrackedEvent` | Every event carries bridge ID + UTM |
 | Admin CMS | `app/admin/cms/` | Create/edit/disable bridges & presets from forms (admin-only) |
-| Auth middleware | `proxy.ts` | Kinde wrapper; public paths list |
+| Admin gate | `proxy.ts` + `lib/admin-auth.ts` | Password cookie for `/admin*`; public product open |
 
 **DB models:** User (isAdmin flag) · Lead · NewsletterSubscriber (lists[]) · Generation ·
 TrackedEvent · DailyUsage · CmsBridge · CmsPreset · Activity (legacy).
@@ -227,10 +228,10 @@ Known small gaps (the ~5%):
 3. Tracking: bridge "option selected"/"CTA click" are inferable but not separate events; "email opened" needs ESP webhooks; "return visit" not explicit.
 4. Thank-you referral/premium placeholder slots not visually present (Phase 2 anyway).
 5. Mini-quiz and teacher bridge templates not built (5 of the 7 template types exist; PRD required 3–5 ✅).
-6. Facebook/Apple login must be enabled in the Kinde dashboard (code-ready).
+6. End-user login removed (Kinde deleted) — PRD allows anonymous credits only.
 
 PRD-compliance cleanup already done: removed the legacy global newsletter popup (email
-must only be asked at the gate) and all dead login-gate code.
+must only be asked at the gate) and all end-user login/Kinde code.
 
 ---
 
@@ -244,8 +245,7 @@ must only be asked at the gate) and all dead login-gate code.
 | **Live site** | https://ai-printables.vercel.app | Production, auto-deploys from GitHub `main` |
 | **GitHub repo** | github.com/thathaorg/Ai_printables- (**PUBLIC** — recommend making it private) | Accessible from GitHub account **Arupbiswas09** (not Arup-atcon). Local remote name: `thatha` |
 | **Vercel** | Project `ai-printables`, team `arup-8240s-projects` (projectId `prj_Y892tQw3OP5CZ9IV6BE1cG6dcNaY`) | Personal access token stored as `VERCEL_TOKEN` in `.env` (used for env-var management + deploy checks). Rotate it at vercel.com → Settings → Tokens if ever exposed |
-| **Admin login (app)** | **software@thatha.org** — `isAdmin: true` already set in the database | Owner must register this email once on the live site (via Kinde signup, choosing their own password there — passwords are never stored in this repo or DB). Then `/admin/cms`, `/admin/users`, `/admin/newsletter` unlock. Works with any Kinde login method using that email |
-| **Kinde (auth)** | Tenant: `aiprintables.kinde.com` · manage at app.kinde.com | Client ID/secret in `.env` as `KINDE_*`. ⚠️ Must add prod callback `https://ai-printables.vercel.app/api/auth/kinde_callback` + logout URL `https://ai-printables.vercel.app` in the Kinde dashboard or live login fails |
+| **Admin login (app)** | `/admin-login` | Set `ADMIN_PASSWORD` (or `ADMIN_SECRET`) in `.env` and Vercel. Cookie `kiwiz_admin` is day-scoped HMAC. No Kinde / no user accounts for CMS. |
 | **OpenRouter (AI)** | Billing email: arup@thatha.org · key in `.env` as `OPENROUTER_API_KEY` | ✅ Working. ~$8 credits (~$0.04/worksheet). Invoice GALLVM7Y-0001 ($9.58, due Aug 25 2026) — confirm paid or credits get revoked |
 | **Neon (database)** | Connection string in `.env` as `DATABASE_URL` | Shared by local + production |
 | **Resend (email)** | Account owner: 210106020@hbtu.ac.in · key in `.env` as `RESEND_API_KEY` | ⚠️ Sandbox: only emails the owner address until a domain is verified at resend.com/domains; then set `RESEND_FROM` |
@@ -263,7 +263,7 @@ pnpm dev                     # → http://localhost:3000
 
 **Deploying = pushing.** The Vercel project is git-connected: every push to `main` on
 GitHub auto-builds and deploys. All env vars are already set in Vercel (with production
-URLs for the Kinde/site vars). Note: Vercel blocks Next.js versions with known CVEs —
+env vars). Note: Vercel blocks Next.js versions with known CVEs —
 that's why the project is on Next 16.3.0; keep it updated.
 
 Useful URLs: `/` home · `/create` studio · `/free/dino_coloring_01` sample bridge ·
@@ -274,10 +274,10 @@ Useful URLs: `/` home · `/create` studio · `/free/dino_coloring_01` sample bri
 ## 6. Remaining work
 
 **Blocking real-world usage:**
-1. **Kinde callbacks** (owner, 2 min) — add the two URLs from §4 or live login fails.
-2. **Register the admin email** on the live site → `/admin/cms` unlocks.
-3. **Resend domain verification** — so delivery emails reach everyone, not just the owner.
-4. **Pay/confirm the OpenRouter invoice** before Aug 25 2026.
+1. **Set `ADMIN_PASSWORD`** in Vercel + local `.env` so `/admin-login` → `/admin/cms` works.
+2. **Resend domain verification** — so delivery emails reach everyone, not just the owner.
+3. **Pay/confirm the OpenRouter invoice** before Aug 25 2026.
+4. **Remove stale `KINDE_*` env vars** from Vercel when convenient (no longer used).
 
 **Recommended:**
 - Make the GitHub repo **private**.
@@ -285,8 +285,8 @@ Useful URLs: `/` home · `/create` studio · `/free/dino_coloring_01` sample bri
 - Terms & Privacy pages (the email gate references them).
 
 **Nice-to-have / Phase 2 backlog:** mini-quiz + teacher bridge templates · explicit
-B&W post-processing · ESP open-tracking webhooks · custom Kinde login domain · Beehiiv
-sync · referral + premium placeholders · upload-your-drawing · user library · more
+B&W post-processing · ESP open-tracking webhooks · Beehiiv sync · referral + premium
+placeholders · upload-your-drawing · optional user accounts if needed later · more
 presets (mazes, dot-to-dot, matching, cursive, seasonal) · remove leftover legacy pages
 (`/dashboard`, i18n scaffolding) if desired.
 
@@ -294,7 +294,7 @@ presets (mazes, dot-to-dot, matching, cursive, seasonal) · remove leftover lega
 
 ## 7. How a non-developer launches a new campaign
 
-1. Log in (admin email) → **`/admin/cms`** → *Bridge pages* → **New bridge page**.
+1. Open **`/admin-login`**, enter `ADMIN_PASSWORD` → **`/admin/cms`** → *Bridge pages* → **New bridge page**.
 2. Fill the form: headline "Free Christmas Coloring Pages", type "Theme picker",
    choices "Santa, Reindeer, Snowman", target worksheet "Coloring Page". **Save & publish.**
 3. **Copy link** → paste into the Pinterest pin with `?utm_source=pinterest&utm_campaign=xmas25`.
