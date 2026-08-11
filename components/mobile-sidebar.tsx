@@ -8,7 +8,6 @@ import {
   Home as HomeIcon,
   PenTool,
   MessageCircle,
-  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -75,14 +74,6 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
               className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[var(--ink-soft)] hover:bg-[var(--muted)]"
             >
               Privacy
-            </Link>
-            <Link
-              href="/admin-login"
-              onClick={onClose}
-              className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[var(--ink-soft)] hover:bg-[var(--muted)]"
-            >
-              <Shield className="h-4 w-4" />
-              Admin
             </Link>
           </nav>
         </div>
