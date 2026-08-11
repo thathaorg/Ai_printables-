@@ -5,7 +5,6 @@ import {
   HelpCircle,
   Info,
   Mail,
-  Crown,
   LogOut,
   Home as HomeIcon,
   PenTool,
@@ -31,7 +30,6 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const baseNavItems = [
     { label: "Home", translationKey: "navigation.home", icon: HomeIcon, href: "/" },
     { label: "Create", translationKey: "navigation.create", icon: PenTool, href: "/create" },
-    { label: "Membership", translationKey: "navigation.membership", icon: Crown, href: "/membership" },
     { label: "How to Use", translationKey: "navigation.howToUse", icon: HelpCircle, href: "/how-to-use" },
     { label: "About Us", translationKey: "navigation.aboutUs", icon: Info, href: "/about-us" },
     { label: "Parenting Newsletter", translationKey: "navigation.newsletter", icon: Mail, href: "/parenting-newsletter" },

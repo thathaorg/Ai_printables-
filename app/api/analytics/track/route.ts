@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { cookies } from "next/headers";
+import { ANON_COOKIE } from "@/lib/kiwiz-config";
+
+export const dynamic = "force-dynamic";
 
 async function getPrisma() {
   if (!process.env.DATABASE_URL) {
@@ -10,74 +14,70 @@ async function getPrisma() {
   return prisma;
 }
 
+/**
+ * POST /api/analytics/track
+ * Funnel events (PRD): every event carries bridge ID + UTM + campaign so the
+ * chain from ad to subscription never breaks.
+ * Body: { event: string, props?: object, bridgeId?, utmSource?, utmMedium?, utmCampaign? }
+ * (legacy body { type, duration, prompt, imageUrl } still accepted)
+ */
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { type, duration, prompt, imageUrl } = data;
-    
-    console.log('Analytics data received:', data);
+    const prisma = await getPrisma();
+    if (!prisma) {
+      return NextResponse.json({ success: true, warning: "Database not configured" });
+    }
 
-    // Try to get authenticated user (optional for public tracking)
+    const cookieStore = await cookies();
+    const anonId = cookieStore.get(ANON_COOKIE)?.value ?? null;
+
+    // ---- new funnel events ----
+    if (typeof data?.event === "string") {
+      await prisma.trackedEvent.create({
+        data: {
+          name: data.event.slice(0, 80),
+          props: data.props ?? undefined,
+          bridgeId: data.bridgeId ?? null,
+          utmSource: data.utmSource ?? null,
+          utmMedium: data.utmMedium ?? null,
+          utmCampaign: data.utmCampaign ?? null,
+          anonId,
+        },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // ---- legacy session/activity tracking ----
+    const { type, duration, prompt, imageUrl } = data;
     const { getUser } = getKindeServerSession();
-    const user = await getUser();
+    const user = await getUser().catch(() => null);
 
     if (user) {
-      const prisma = await getPrisma();
-      if (!prisma) {
-        return NextResponse.json(
-          { success: true, warning: "Database not configured" },
-          { status: 200 }
-        );
-      }
-
-      const dbUser = await prisma.user.findUnique({
-        where: { kindeId: user.id },
-      });
-
+      const dbUser = await prisma.user.findUnique({ where: { kindeId: user.id } });
       if (dbUser) {
-        // Update session time if tracking session
-        if (type === 'SESSION' && duration) {
+        if (type === "SESSION" && duration) {
           await prisma.user.update({
             where: { id: dbUser.id },
-            data: {
-              totalSessionHours: {
-                increment: duration,
-              },
-            },
+            data: { totalSessionHours: { increment: duration } },
           });
         }
-
-        // Track activity (coloring/tracing)
-        if (type === 'COLORING' || type === 'TRACING') {
-          // Create activity record
+        if (type === "COLORING" || type === "TRACING") {
           await prisma.activity.create({
             data: {
-              type: type as any,
-              prompt: prompt || 'Untitled',
+              type,
+              prompt: prompt || "Untitled",
               imageUrl: imageUrl || null,
               userId: dbUser.id,
             },
           });
-
-          // Increment counter
-          if (type === 'COLORING') {
-            await prisma.user.update({
-              where: { id: dbUser.id },
-              data: { coloringCount: { increment: 1 } },
-            });
-          } else if (type === 'TRACING') {
-            await prisma.user.update({
-              where: { id: dbUser.id },
-              data: { tracingCount: { increment: 1 } },
-            });
-          }
         }
       }
     }
-    
-    return NextResponse.json({ success: true }, { status: 200 });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Analytics error:', error);
-    return NextResponse.json({ error: 'Failed to process analytics' }, { status: 500 });
+    console.error("Analytics error:", error);
+    return NextResponse.json({ error: "Failed to process analytics" }, { status: 500 });
   }
 }

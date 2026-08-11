@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Mail, Home } from "lucide-react";
+import { LayoutDashboard, Users, Mail, Home, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 
 const sidebarLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/cms", label: "Content", icon: PenTool },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
 ];

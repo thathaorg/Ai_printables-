@@ -17,8 +17,6 @@ model User {
   updatedAt            DateTime? @updatedAt
   plan                 Plan     @default(FREE)
   generationCount      Int      @default(0)
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
   newsletterSubscribed Boolean  @default(false)
   isAdmin              Boolean  @default(false)
 
@@ -44,9 +42,95 @@ model Activity {
 model NewsletterSubscriber {
   id        String   @id @default(cuid())
   email     String   @unique
+  lists     String[] @default([])
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
   userId    String?  @unique
   user      User?    @relation(fields: [userId], references: [id])
+}
+
+// Email-gate lead: captured before download unlock, with consent + funnel tags
+model Lead {
+  id          String   @id @default(cuid())
+  email       String
+  preset      String?
+  topic       String?
+  age         String?
+  style       String?
+  bridgeId    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  consentTos  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+  @@index([bridgeId])
+}
+
+// One AI worksheet generation through the preset pipeline
+model Generation {
+  id        String   @id @default(cuid())
+  preset    String
+  options   Json
+  prompt    String
+  imageUrl  String?
+  status    String   @default("succeeded") // succeeded | failed | safety_blocked
+  anonId    String?
+  email     String?
+  bridgeId  String?
+  createdAt DateTime @default(now())
+
+  @@index([anonId])
+  @@index([email])
+}
+
+// Funnel tracking event (bridge/preset/gate/delivery), always carries bridge + UTM
+model TrackedEvent {
+  id          String   @id @default(cuid())
+  name        String
+  props       Json?
+  bridgeId    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  anonId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([name])
+  @@index([bridgeId])
+}
+
+// CMS: bridge pages created from the admin panel (config-driven, PRD Phase 2).
+// Built-in bridges live in lib/bridges.ts; these are layered on top.
+model CmsBridge {
+  id        String   @id @default(cuid())
+  bridgeId  String   @unique
+  config    Json
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// CMS: worksheet presets created from the admin panel.
+// Built-in presets live in lib/presets.ts; these are layered on top.
+model CmsPreset {
+  id        String   @id @default(cuid())
+  presetId  String   @unique
+  config    Json
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Server-enforced daily generation credits (anonymous cookie id or user id)
+model DailyUsage {
+  id    String @id @default(cuid())
+  key   String // "anon:<id>" or "user:<id>"
+  day   String // YYYY-MM-DD (UTC)
+  count Int    @default(0)
+
+  @@unique([key, day])
 }
 
 enum Plan {

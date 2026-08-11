@@ -23,8 +23,10 @@ export default withAuth(
       if (pathname.startsWith('/api')) {
         const isPublicAPI =
           pathname.startsWith('/api/auth') ||
-          pathname.startsWith('/api/generate-coloring') ||
-          pathname.startsWith('/api/generate-tracing') ||
+          pathname.startsWith('/api/generate') ||
+          pathname.startsWith('/api/presets') ||
+          pathname.startsWith('/api/lead') ||
+          pathname.startsWith('/api/deliver') ||
           pathname.startsWith('/api/analytics/track') ||
           pathname.startsWith('/api/newsletter/subscribe');
 
@@ -57,12 +59,14 @@ export default withAuth(
     }
 
     // ✅ Allow all public paths below (no login required)
-    const isPublicPath = 
+    const isPublicPath =
       pathname === "/" ||
       pathname.startsWith("/create") ||
+      pathname.startsWith("/free") ||
+      pathname.startsWith("/thank-you") ||
       pathname.startsWith("/how-to-use") ||
       pathname.startsWith("/about-us") ||
-      pathname.startsWith("/membership") ||
+      pathname.startsWith("/contact-us") ||
       pathname.startsWith("/parenting-newsletter");
 
     if (isPublicPath) {
@@ -99,14 +103,18 @@ export default withAuth(
     publicPaths: [
       "/",
       "/create",
+      "/free",
+      "/thank-you",
       "/api/auth/health",
-      "/api/generate-coloring",
-      "/api/generate-tracing",
+      "/api/generate",
+      "/api/presets",
+      "/api/lead",
+      "/api/deliver",
       "/api/analytics/track",
       "/api/newsletter/subscribe",
       "/how-to-use",
       "/about-us",
-      "/membership",
+      "/contact-us",
       "/parenting-newsletter",
       // Add locale prefixed paths
       "/en",

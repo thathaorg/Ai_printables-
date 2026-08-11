@@ -236,13 +236,13 @@ export default function Dashboard() {
                   {isLoadingTranslations ? `${analytics.remainingGenerations} generations remaining today` : `${analytics.remainingGenerations} ${t('dashboard.generationsRemaining')}`}
                 </p>
               )}
-              <Link href="/membership">
+              <Link href="/create">
                 <Button
                   size="sm"
                   className="w-full text-xs h-8 bg-orange-500 text-white hover:bg-orange-600 transition-all rounded-full flex items-center justify-center"
                 >
                   <Star className="h-3 w-3 mr-1" />
-                  {isLoadingTranslations ? "Upgrade to Premium" : t('dashboard.upgradeToPremium')}
+                  Create a Worksheet
                 </Button>
               </Link>
             </CardContent>

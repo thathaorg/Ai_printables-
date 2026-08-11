@@ -28,3 +28,6 @@ next-env.d.ts
 
 design.txt
 /lib/generated/prisma
+
+# playwright MCP screenshots
+.playwright-mcp/

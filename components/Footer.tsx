@@ -29,9 +29,6 @@ export default function Footer() {
                 <Link href="/create" className="hover:text-[#FF4C4C]">Start Creating</Link>
               </li>
               <li>
-                <Link href="/membership" className="hover:text-[#FF4C4C]">Membership Plans</Link>
-              </li>
-              <li>
                 <Link href="/parenting-newsletter" className="hover:text-[#FF4C4C]">
                   Parenting Newsletter
                 </Link>
@@ -63,11 +60,6 @@ export default function Footer() {
               <li>
                 <Link href="/contact-us" className="hover:text-[#FF4C4C]">
                   Contact Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/membership" className="hover:text-[#FF4C4C]">
-                  Upgrade to Premium
                 </Link>
               </li>
               <li>
