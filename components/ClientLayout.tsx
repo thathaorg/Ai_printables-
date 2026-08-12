@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import React from "react"
-import BottomNav from "@/components/ui/BottomNav"
+import React from "react";
+import BottomNav from "@/components/ui/BottomNav";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // PRD: email is only ever asked at the download gate on /create — no global
 // newsletter popups (they would also appear on bridge pages, which must
@@ -9,8 +10,8 @@ import BottomNav from "@/components/ui/BottomNav"
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      {children}
+      <ErrorBoundary>{children}</ErrorBoundary>
       <BottomNav />
     </>
-  )
+  );
 }

@@ -10,66 +10,60 @@ interface SplashScreenProps {
   onComplete: () => void;
 }
 
-/** First-visit splash: brand moment → purpose (printables) → studio. */
+/** First-visit splash — always exits within ~3.2s so mobile never gets stuck. */
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
+  const done = useRef(false);
 
   useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
+    const finish = () => {
+      if (done.current) return;
+      done.current = true;
+      onComplete();
+    };
 
-    if (prefersReducedMotion()) {
-      const t = setTimeout(onComplete, 600);
-      return () => clearTimeout(t);
+    // Hard failsafe — never trap users on splash (esp. if GSAP/Image hangs)
+    const hard = window.setTimeout(finish, 3200);
+
+    const root = rootRef.current;
+    if (!root || prefersReducedMotion()) {
+      const t = window.setTimeout(finish, 500);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(hard);
+      };
     }
 
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        onComplete,
-      });
+      const tl = gsap.timeline({ onComplete: finish });
 
       tl.from(".splash-logo", {
         scale: 0.4,
         rotation: -12,
         opacity: 0,
-        duration: 0.7,
+        duration: 0.55,
         ease: EASE_BOUNCE,
       })
         .from(
           ".splash-title",
-          { y: 24, opacity: 0, duration: 0.45, ease: "power3.out" },
-          "-=0.25"
-        )
-        .from(
-          ".splash-sub",
-          { y: 16, opacity: 0, duration: 0.4 },
+          { y: 20, opacity: 0, duration: 0.35, ease: "power3.out" },
           "-=0.2"
         )
+        .from(".splash-sub", { y: 12, opacity: 0, duration: 0.3 }, "-=0.15")
         .from(
           ".splash-chip",
-          { scale: 0, opacity: 0, stagger: 0.08, duration: 0.4, ease: EASE_BOUNCE },
-          "-=0.15"
+          { scale: 0.6, opacity: 0, stagger: 0.06, duration: 0.3, ease: EASE_BOUNCE },
+          "-=0.1"
         )
-        .to(
-          barRef.current,
-          { scaleX: 1, duration: 1.1, ease: "power1.inOut" },
-          "-=0.3"
-        )
-        .to(root, { autoAlpha: 0, duration: 0.35, delay: 0.15 });
-
-      gsap.to(".splash-float", {
-        y: -12,
-        rotation: "+=6",
-        duration: 1.6,
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut",
-        stagger: 0.2,
-      });
+        .to(barRef.current, { scaleX: 1, duration: 0.85, ease: "power1.inOut" }, "-=0.2")
+        .to(root, { autoAlpha: 0, duration: 0.25, delay: 0.05 });
     }, root);
 
-    return () => ctx.revert();
+    return () => {
+      clearTimeout(hard);
+      ctx.revert();
+    };
   }, [onComplete]);
 
   return (
@@ -85,22 +79,25 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       <Image
         src="/brand/sticker-star.svg"
         alt=""
-        width={48}
-        height={48}
+        width={40}
+        height={40}
+        priority={false}
         className="splash-float absolute left-[12%] top-[22%]"
       />
       <Image
         src="/brand/sticker-crayon.svg"
         alt=""
-        width={56}
-        height={56}
+        width={48}
+        height={48}
+        priority={false}
         className="splash-float absolute right-[14%] top-[30%]"
       />
       <Image
         src="/brand/sticker-paper.svg"
         alt=""
-        width={52}
-        height={52}
+        width={44}
+        height={44}
+        priority={false}
         className="splash-float absolute bottom-[22%] left-[18%]"
       />
 
@@ -130,6 +127,17 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
             className="h-full origin-left scale-x-0 rounded-full bg-gradient-to-r from-[var(--kiwi)] via-[var(--sun)] to-[var(--coral)]"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (done.current) return;
+            done.current = true;
+            onComplete();
+          }}
+          className="mt-6 text-sm font-semibold text-[var(--kiwi-deep)] underline"
+        >
+          Skip
+        </button>
       </div>
     </div>
   );

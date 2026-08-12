@@ -3,14 +3,17 @@
 import { useState, useEffect } from "react";
 import SplashScreen from "@/components/splash-screen";
 import HomePage from "@/components/home-page";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const hasVisited = localStorage.getItem("kiwiz-has-visited");
-    if (hasVisited) {
+    try {
+      const hasVisited = localStorage.getItem("kiwiz-has-visited");
+      if (hasVisited) setShowSplash(false);
+    } catch {
       setShowSplash(false);
     }
     setReady(true);
@@ -24,12 +27,20 @@ export default function Home() {
     return (
       <SplashScreen
         onComplete={() => {
-          localStorage.setItem("kiwiz-has-visited", "true");
+          try {
+            localStorage.setItem("kiwiz-has-visited", "true");
+          } catch {
+            /* private mode */
+          }
           setShowSplash(false);
         }}
       />
     );
   }
 
-  return <HomePage />;
+  return (
+    <ErrorBoundary>
+      <HomePage />
+    </ErrorBoundary>
+  );
 }
