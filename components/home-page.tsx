@@ -245,11 +245,12 @@ export default function HomePage() {
               <div
                 className={`${active.tint} relative overflow-hidden rounded-[1.5rem] p-3 transition-colors duration-300`}
               >
-                <div ref={previewImgRef} className="relative mx-auto aspect-[3/4] w-full max-w-[260px] overflow-hidden rounded-xl shadow-md ring-1 ring-black/5">
+                <div ref={previewImgRef} className="relative mx-auto aspect-[4/5] w-full max-w-[260px] overflow-hidden rounded-xl shadow-md ring-1 ring-black/5">
                   <SampleImage
                     src={active.preview}
                     fallback={active.fallbackPreview}
                     alt={active.sample}
+                    hideHeader
                     className="absolute inset-0"
                     priority
                   />
@@ -322,7 +323,7 @@ export default function HomePage() {
                 Four kinds of printables
               </h2>
               <p className="mt-2 max-w-lg text-[var(--ink-soft)]">
-                Each card shows a real page layout — so you know exactly what prints.
+                Real sample art on every card — peek at what kids will color, trace, and count.
               </p>
             </div>
             <Link
@@ -356,13 +357,18 @@ export default function HomePage() {
                   <span className="font-display text-xs font-bold text-[var(--ink)]/40">A4 PDF</span>
                 </div>
 
-                <div className="relative mx-auto mb-3 aspect-[3/4] w-full max-w-[180px] overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-                  <SampleImage
-                    src={p.preview}
-                    fallback={p.fallbackPreview}
-                    alt={`${p.title} sample worksheet`}
-                    className="absolute inset-0 transition duration-300 group-hover:scale-[1.03]"
-                  />
+                <div className="relative mx-auto mb-3 aspect-[4/5] w-full max-w-[200px] overflow-hidden rounded-2xl bg-white shadow-[0_10px_28px_-14px_rgba(30,41,53,0.35)] ring-1 ring-black/8">
+                  <div className="absolute inset-[6px] overflow-hidden rounded-xl bg-[#FFFEFA]">
+                    <SampleImage
+                      src={p.preview}
+                      fallback={p.fallbackPreview}
+                      alt={`${p.title} sample worksheet`}
+                      hideHeader
+                      className="absolute inset-0 transition duration-500 group-hover:scale-[1.04]"
+                    />
+                  </div>
+                  {/* tiny paper corner fold cue */}
+                  <div className="pointer-events-none absolute right-2 top-2 h-5 w-5 rounded-bl-md bg-gradient-to-bl from-black/5 to-transparent" />
                 </div>
 
                 <h3 className={`font-display text-xl font-bold ${p.accent}`}>{p.title}</h3>
